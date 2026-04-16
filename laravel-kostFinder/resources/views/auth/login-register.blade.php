@@ -1,5 +1,4 @@
-@extends('layouts.auth')
-
+@extends('admin.layouts.auth')
 @section('title', 'Masuk atau Daftar')
 
 @section('content')
@@ -9,13 +8,12 @@
     </nav>
 
     <div class="auth-card">
-
         <div class="auth-tabs">
             <button class="tab-btn active" id="tab-login" onclick="switchTab('login')">Masuk</button>
             <button class="tab-btn" id="tab-register" onclick="switchTab('register')">Daftar</button>
         </div>
 
-        <!-- LOGIN -->
+        {{-- ─── LOGIN ─── --}}
         <div id="form-login" class="auth-form">
             <div class="form-header">
                 <div class="eyebrow"><span class="pulse-dot"></span> Selamat Datang Kembali</div>
@@ -27,7 +25,9 @@
                 <label>Email</label>
                 <div class="input-wrap">
                     <span class="input-icon">📧</span>
-                    <input type="text" id="login-email" name="email" placeholder="namaemail@gmail.com" />
+                    {{-- Enter di field email pindah ke password --}}
+                    <input type="email" id="login-email" placeholder="namaemail@gmail.com"
+                        onkeydown="if(event.key==='Enter')document.getElementById('login-pw').focus()" />
                 </div>
             </div>
 
@@ -35,26 +35,32 @@
                 <label>Password</label>
                 <div class="input-wrap">
                     <span class="input-icon">🔑</span>
-                    <input type="password" id="login-pw" name="password" placeholder="Masukkan password" />
+                    {{-- Enter di field password langsung submit login --}}
+                    <input type="password" id="login-pw" placeholder="Masukkan password"
+                        onkeydown="if(event.key==='Enter')handleLogin(document.getElementById('btn-login'))" />
                     <button class="pw-toggle" onclick="togglePw('login-pw',this)" type="button">👁️</button>
                 </div>
             </div>
 
             <div class="form-extras">
                 <label class="checkbox-label">
-                    <input type="checkbox" checked /> Ingat saya
+                    {{-- Checkbox ingat saya — nilai dikirim ke server --}}
+                    <input type="checkbox" id="login-remember" checked /> Ingat saya
                 </label>
-                <a href="#" class="forgot-link">Lupa password?</a>
             </div>
 
-            <button class="btn-submit" onclick="handleLogin(this)">Masuk Sekarang →</button>
+            <div id="login-error"
+                style="display:none;background:rgba(229,62,62,.08);border:1px solid rgba(229,62,62,.2);border-radius:10px;padding:11px 14px;font-size:13px;color:#E53E3E;margin-bottom:14px">
+            </div>
+
+            <button class="btn-submit" id="btn-login" onclick="handleLogin(this)">Masuk Sekarang →</button>
 
             <div class="switch-link">
                 Belum punya akun? <a onclick="switchTab('register')">Daftar Gratis</a>
             </div>
         </div>
 
-        <!-- REGISTER -->
+        {{-- ─── REGISTER ─── --}}
         <div id="form-register" class="auth-form" style="display:none">
             <div class="form-header">
                 <div class="eyebrow"><span class="pulse-dot"></span> Bergabung Sekarang</div>
@@ -62,22 +68,23 @@
                 <p>Bergabung dengan 18.000+ pencari kost di seluruh Indonesia.</p>
             </div>
 
-
             <div class="form-group">
                 <label>Nama Lengkap</label>
                 <div class="input-wrap">
                     <span class="input-icon">👤</span>
-                    <input type="text" id="reg-name" name="name" placeholder="Budi" />
+                    {{-- Enter pindah ke field email --}}
+                    <input type="text" id="reg-name" placeholder="Nama Lengkap"
+                        onkeydown="if(event.key==='Enter')document.getElementById('reg-email').focus()" />
                 </div>
             </div>
 
             <div class="form-group">
                 <label>Foto Profil</label>
                 <div class="upload-row" id="uploadRow">
-                    <input type="file" name="profile_picture" accept="image/*" id="fileInput" onchange="handleFile(this)">
+                    <input type="file" accept="image/*" id="fileInput" onchange="handleFile(this)" />
                     <div class="avatar-sm" id="avatarSm">
                         <span id="placeholder">📷</span>
-                        <img id="previewImg" alt="">
+                        <img id="previewImg" alt="" />
                     </div>
                     <div style="flex:1;min-width:0">
                         <p class="ut-main" id="utMain">Pilih foto profil</p>
@@ -91,7 +98,9 @@
                 <label>Email</label>
                 <div class="input-wrap">
                     <span class="input-icon">📧</span>
-                    <input type="email" id="reg-email" name="email" placeholder="namaemail@gmail.com" />
+                    {{-- Enter pindah ke password --}}
+                    <input type="email" id="reg-email" placeholder="namaemail@gmail.com"
+                        onkeydown="if(event.key==='Enter')document.getElementById('reg-pw').focus()" />
                 </div>
             </div>
 
@@ -99,7 +108,9 @@
                 <label>Password</label>
                 <div class="input-wrap">
                     <span class="input-icon">🔑</span>
-                    <input type="password" id="reg-pw" placeholder="Min. 8 karakter..." oninput="checkStrength(this)" />
+                    {{-- Enter di password langsung submit register --}}
+                    <input type="password" id="reg-pw" placeholder="Min. 8 karakter..." oninput="checkStrength(this)"
+                        onkeydown="if(event.key==='Enter')handleRegister(document.getElementById('btn-register'))" />
                     <button class="pw-toggle" onclick="togglePw('reg-pw',this)" type="button">👁️</button>
                 </div>
                 <div class="pw-strength" id="pw-strength">
@@ -110,18 +121,21 @@
                 </div>
             </div>
 
-            <button class="btn-submit" onclick="handleRegister(this)">Buat Akun Sekarang →</button>
+            <div id="reg-error"
+                style="display:none;background:rgba(229,62,62,.08);border:1px solid rgba(229,62,62,.2);border-radius:10px;padding:11px 14px;font-size:13px;color:#E53E3E;margin-bottom:14px">
+            </div>
+
+            <button class="btn-submit" id="btn-register" onclick="handleRegister(this)">Buat Akun Sekarang →</button>
 
             <p class="terms-text">
-                Dengan mendaftar, kamu menyetujui <a href="">Syarat & Ketentuan</a> dan <a href="">Kebijakan Privasi</a>
-                KostFinder.
+                Dengan mendaftar, kamu menyetujui
+                <a href="">Syarat & Ketentuan</a> dan <a href="">Kebijakan Privasi</a> KostFinder.
             </p>
 
             <div class="switch-link">
                 Sudah punya akun? <a onclick="switchTab('login')">Masuk di sini</a>
             </div>
         </div>
-
     </div>
 
     <div class="trust-row">
@@ -138,20 +152,16 @@
 
 @push('scripts')
     <script>
-        // 1. Cek URL saat halaman pertama kali dimuat
-        document.addEventListener("DOMContentLoaded", () => {
-            const currentPath = window.location.pathname;
-            if (currentPath === '/register' || currentPath.includes('register')) {
-                switchTab('register', false);
-            } else {
-                switchTab('login', false);
-            }
+        /* ══════════════════════════════════════════════════
+           TAB SWITCHER
+        ══════════════════════════════════════════════════ */
+        document.addEventListener('DOMContentLoaded', () => {
+            const path = window.location.pathname;
+            switchTab(path.includes('register') ? 'register' : 'login', false);
         });
 
-        // 2. Fungsi untuk mengganti tab dan mengubah URL
         function switchTab(tab, pushState = true) {
             const isLogin = tab === 'login';
-
             document.getElementById('tab-login').classList.toggle('active', isLogin);
             document.getElementById('tab-register').classList.toggle('active', !isLogin);
 
@@ -164,28 +174,170 @@
             el.style.animation = 'none';
             requestAnimationFrame(() => { el.style.animation = ''; });
 
-            // 3. Ubah URL di address bar tanpa reload halaman
             if (pushState) {
-                const newUrl = isLogin ? '/login' : '/register';
-                window.history.pushState({ tab: tab }, '', newUrl);
+                window.history.pushState({ tab }, '', isLogin ? '/login' : '/register');
             }
         }
 
-        // 4. Handle tombol Back dan Forward di browser
-        window.addEventListener('popstate', (event) => {
-            const currentPath = window.location.pathname;
-            if (currentPath === '/register' || currentPath.includes('register')) {
-                switchTab('register', false);
-            } else {
-                switchTab('login', false);
-            }
+        window.addEventListener('popstate', () => {
+            const path = window.location.pathname;
+            switchTab(path.includes('register') ? 'register' : 'login', false);
         });
+
+        /* ══════════════════════════════════════════════════
+           LOGIN
+           - "Ingat Saya" dikirim ke server sebagai field "remember"
+           - Auth::login($user, $remember) di controller akan membuat
+             cookie persisten jika remember=true
+        ══════════════════════════════════════════════════ */
+        async function handleLogin(btn) {
+            const email = document.getElementById('login-email').value.trim();
+            const password = document.getElementById('login-pw').value;
+            const remember = document.getElementById('login-remember').checked;
+            const errorEl = document.getElementById('login-error');
+
+            // Validasi frontend
+            if (!email || !password) {
+                showError(errorEl, '⚠️ Email dan password wajib diisi.');
+                return;
+            }
+            if (!email.includes('@')) {
+                showError(errorEl, '⚠️ Format email tidak valid.');
+                return;
+            }
+
+            errorEl.style.display = 'none';
+            btn.textContent = '⏳ Memproses...';
+            btn.disabled = true;
+
+            try {
+                const res = await fetch('/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Accept': 'application/json',
+                    },
+                    body: JSON.stringify({ email, password, remember }),
+                });
+                const result = await res.json();
+
+                if (res.ok && result.success) {
+                    showToast('Berhasil masuk! Selamat datang 👋', '✅');
+                    // Redirect berdasarkan role
+                    setTimeout(() => {
+                        const role = result.user?.role ?? 'user';
+                        window.location.href = role === 'admin'
+                            ? '{{ route("dashboard") }}'
+                            : '{{ route("user.dashboard") }}';
+                    }, 900);
+                } else {
+                    showError(errorEl, result.message || 'Email atau password salah.');
+                    btn.textContent = 'Masuk Sekarang →';
+                    btn.disabled = false;
+                }
+            } catch (err) {
+                console.error(err);
+                showError(errorEl, '❌ Koneksi ke server terputus.');
+                btn.textContent = 'Masuk Sekarang →';
+                btn.disabled = false;
+            }
+        }
+
+        /* ══════════════════════════════════════════════════
+           REGISTER
+           Setelah berhasil:
+           1. Tampilkan toast sukses
+           2. Clear semua field form register
+           3. Pindah ke tab login setelah 1.5 detik
+        ══════════════════════════════════════════════════ */
+        async function handleRegister(btn) {
+            const name = document.getElementById('reg-name').value.trim();
+            const email = document.getElementById('reg-email').value.trim();
+            const password = document.getElementById('reg-pw').value;
+            const fileInput = document.getElementById('fileInput');
+            const errorEl = document.getElementById('reg-error');
+
+            // Validasi frontend
+            if (!name) { showError(errorEl, '⚠️ Nama lengkap wajib diisi.'); return; }
+            if (!email) { showError(errorEl, '⚠️ Email wajib diisi.'); return; }
+            if (!email.includes('@')) { showError(errorEl, '⚠️ Format email tidak valid.'); return; }
+            if (!password) { showError(errorEl, '⚠️ Password wajib diisi.'); return; }
+            if (password.length < 8) { showError(errorEl, '⚠️ Password minimal 8 karakter.'); return; }
+            if (!fileInput.files[0]) { showError(errorEl, '⚠️ Foto profil wajib diupload.'); return; }
+
+            errorEl.style.display = 'none';
+            btn.textContent = '⏳ Membuat akun...';
+            btn.disabled = true;
+
+            const formData = new FormData();
+            formData.append('name', name);
+            formData.append('email', email);
+            formData.append('password', password);
+            formData.append('profile_picture', fileInput.files[0]);
+
+            try {
+                const res = await fetch('/register', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Accept': 'application/json',
+                    },
+                    body: formData,
+                });
+                const result = await res.json();
+
+                if ((res.ok || res.status === 201) && result.success) {
+                    showToast('Akun berhasil dibuat! Silakan masuk 🎉', '✅');
+
+                    // ── Clear form register ──────────────────────────────
+                    document.getElementById('reg-name').value = '';
+                    document.getElementById('reg-email').value = '';
+                    document.getElementById('reg-pw').value = '';
+                    removeFile({ stopPropagation: () => { } });  // reset foto profil
+                    document.getElementById('pw-strength').classList.remove('show');
+
+                    // ── Pindah ke tab login setelah 1.5 detik ───────────
+                    setTimeout(() => switchTab('login'), 1500);
+
+                } else {
+                    // Tampilkan error validasi dari server
+                    if (result.errors) {
+                        const firstErr = Object.values(result.errors).flat()[0];
+                        showError(errorEl, firstErr || 'Validasi gagal.');
+                    } else {
+                        showError(errorEl, result.message || 'Gagal mendaftar.');
+                    }
+                }
+            } catch (err) {
+                console.error(err);
+                showError(errorEl, '❌ Gagal menghubungi server. Periksa koneksi!');
+            } finally {
+                btn.textContent = 'Buat Akun Sekarang →';
+                btn.disabled = false;
+            }
+        }
+
+        /* ══════════════════════════════════════════════════
+           HELPER FUNCTIONS
+        ══════════════════════════════════════════════════ */
+        function showError(el, msg) {
+            el.textContent = msg;
+            el.style.display = 'block';
+        }
+
+        function showToast(msg, icon = '✅') {
+            document.getElementById('toast-msg').textContent = msg;
+            document.getElementById('toast-icon').textContent = icon;
+            const t = document.getElementById('toast');
+            t.classList.add('show');
+            setTimeout(() => t.classList.remove('show'), 3200);
+        }
 
         function togglePw(id, btn) {
             const input = document.getElementById(id);
-            const isText = input.type === 'text';
-            input.type = isText ? 'password' : 'text';
-            btn.textContent = isText ? '👁️' : '❌';
+            input.type = input.type === 'password' ? 'text' : 'password';
+            btn.textContent = input.type === 'text' ? '❌' : '👁️';
         }
 
         function checkStrength(input) {
@@ -213,144 +365,7 @@
             label.style.color = c.bg;
         }
 
-        function showToast(msg, icon = '✅') {
-            document.getElementById('toast-msg').textContent = msg;
-            document.getElementById('toast-icon').textContent = icon;
-            const t = document.getElementById('toast');
-            t.classList.add('show');
-            setTimeout(() => t.classList.remove('show'), 3200);
-        }
-
-        async function handleLogin(btn) {
-            // Ambil data dari input
-            const email = document.getElementById('login-email').value;
-            const password = document.getElementById('login-pw').value;
-
-            if (!email || !password) {
-                showToast('Email dan password harus diisi!', '⚠️');
-                return;
-            }
-
-            btn.textContent = '⏳ Memproses...';
-            btn.disabled = true;
-
-            try {
-                const response = await fetch('/login', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                    },
-                    body: JSON.stringify({ email, password })
-                });
-
-                const result = await response.json();
-
-                if (response.ok) {
-                    showToast('Berhasil masuk! Selamat datang 👋', '✅');
-
-                    // --- BAGIAN PENTING: REDIRECT KE DASHBOARD ---
-                    const role = result.user.role; // 🔥 WAJIB
-
-                    setTimeout(() => {
-                        if (role === 'admin') {
-                            window.location.href = "{{ route('dashboard') }}";
-                        } else {
-                            window.location.href = "";
-                        }
-                    }, 1000);
-
-                } else {
-                    showToast(result.message || 'Email atau password salah.', '❌');
-                }
-            } catch (error) {
-                showToast('Koneksi ke server terputus.', '❌');
-            } finally {
-                if (!window.location.href.includes('dashboard')) {
-                    btn.textContent = 'Masuk Sekarang →';
-                    btn.disabled = false;
-                }
-            }
-        }
-
-        async function handleRegister(btn) {
-            const name = document.getElementById('reg-name').value;
-            const email = document.getElementById('reg-email').value;
-            const password = document.getElementById('reg-pw').value;
-            const fileInput = document.getElementById('fileInput');
-
-            if (!name || !email || !password) {
-                showToast('Semua field wajib diisi!', '⚠️');
-                return;
-            }
-
-            if (!fileInput.files[0]) {
-                showToast('Foto profil wajib diupload!', '⚠️');
-                return;
-            }
-
-            if (!email.includes('@')) {
-                showToast('Format email tidak valid!', '⚠️');
-                return;
-            }
-
-            const formData = new FormData();
-            formData.append('name', name);
-            formData.append('email', email);
-            formData.append('password', password);
-            formData.append('profile_picture', fileInput.files[0]);
-
-            btn.textContent = '⏳ Membuat akun...';
-            btn.disabled = true;
-
-            try {
-                const response = await fetch('/register', {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                    },
-                    body: formData
-                });
-
-                let result;
-
-                // ✅ INI YANG DIUBAH
-                try {
-                    result = await response.json();
-                } catch (e) {
-                    throw new Error('Response bukan JSON');
-                }
-
-                if (!response.ok) {
-
-                    if (result.errors) {
-                        if (result.errors.email) {
-                            showToast('Email sudah digunakan, gunakan email lain! 📧', '❌');
-                        } else if (result.errors.profile_picture) {
-                            showToast('Foto profil wajib diupload! 📷', '❌');
-                        } else {
-                            showToast(Object.values(result.errors)[0][0], '❌');
-                        }
-                    } else {
-                        showToast(result.message || 'Register gagal', '❌');
-                    }
-
-                    return;
-                }
-
-                // ✅ kalau sukses
-                showToast('Register berhasil! 🎉', '✅');
-
-            } catch (error) {
-                console.error(error); // 🔥 ini penting buat debug
-                showToast('Gagal menghubungi server. Periksa koneksi! 🌐', '❌');
-            } finally {
-                btn.textContent = 'Buat Akun Sekarang →';
-                btn.disabled = false;
-            }
-        }
-
-
+        /* ── Upload Foto ── */
         const row = document.getElementById('uploadRow');
         row.addEventListener('dragover', e => { e.preventDefault(); row.classList.add('drag-over'); });
         row.addEventListener('dragleave', () => row.classList.remove('drag-over'));
@@ -366,8 +381,7 @@
             const reader = new FileReader();
             reader.onload = e => {
                 const img = document.getElementById('previewImg');
-                img.src = e.target.result;
-                img.style.display = 'block';
+                img.src = e.target.result; img.style.display = 'block';
                 document.getElementById('placeholder').style.display = 'none';
                 document.getElementById('avatarSm').style.borderColor = 'var(--coral)';
             };

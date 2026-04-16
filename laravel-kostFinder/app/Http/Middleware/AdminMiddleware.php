@@ -12,11 +12,18 @@ class AdminMiddleware
     {
         $user = Auth::user();
 
-        if (!$user || $user->role !== 'admin') {
-            return response()->json([
-                "success" => false,
-                "message" => "Akses hanya untuk admin"
-            ], 403);
+        if (!$user) {
+            // Belum login: redirect ke halaman login
+            return $request->expectsJson()
+                ? response()->json(['success' => false, 'message' => 'Unauthenticated.'], 401)
+                : redirect()->route('login');
+        }
+
+        if ($user->role !== 'admin') {
+            // Login tapi bukan admin: untuk web redirect ke dashboard user
+            return $request->expectsJson()
+                ? response()->json(['success' => false, 'message' => 'Akses hanya untuk admin.'], 403)
+                : redirect()->route('user.dashboard');
         }
 
         return $next($request);

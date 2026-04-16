@@ -2,25 +2,46 @@
 
 namespace App\Http\Resources;
 
-use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class KostResource extends JsonResource
 {
-    public function toArray(Request $request): array
+    public function toArray($request): array
     {
+        // ID MongoDB → string
+        $id = (string) ($this->_id ?? $this->id ?? '');
+
+        // Foto: jika path relatif, wrap dengan asset()
+        $foto = $this->foto_kost ?? null;
+        if ($foto && !str_starts_with((string) $foto, 'http')) {
+            $foto = asset('storage/' . $foto);
+        }
+
+        // Hitung avg_rating & reviews_count dari relasi
+        try {
+            $reviews      = $this->reviews ?? collect();
+            $reviewsCount = is_countable($reviews) ? (int) count($reviews) : 0;
+            $avgRating    = $reviewsCount > 0
+                ? round((float) collect($reviews)->avg('rating'), 2)
+                : 0;
+        } catch (\Throwable $e) {
+            $reviewsCount = 0;
+            $avgRating    = 0;
+        }
+
         return [
-            "id" => $this->_id,
-            "nama_kost" => $this->nama_kost,
-            "alamat" => $this->alamat,
-            "wifi" => $this->wifi,
-            "listrik" => $this->listrik,
-            "fasilitas" => $this->fasilitas,
-            "pendingin_ruangan" => $this->pendingin_ruangan,
-            "kamar_mandi" => $this->kamar_mandi,
-            "parkir_motor" => $this->parkir_motor,
-            "ukuran_kamar" => $this->ukuran_kamar,
-            "harga" => $this->harga
+            'id'            => $id,
+            'nama_kost'     => (string) ($this->nama_kost     ?? ''),
+            'foto_kost'     => $foto,
+            'alamat_kost'   => (string) ($this->alamat_kost   ?? ''),
+            'kelas'         => (string) ($this->kelas          ?? ''),
+            'jenis_kost'    => (string) ($this->jenis_kost    ?? 'Bebas'),
+            'status'        => (string) ($this->status         ?? ''),
+            'fasilitas'     => (string) ($this->fasilitas      ?? ''),
+            'harga_kost'    => (float)  ($this->harga_kost     ?? 0),
+            'nomor_telepon' => (string) ($this->nomor_telepon  ?? ''),
+            'avg_rating'    => $avgRating,
+            'reviews_count' => $reviewsCount,
         ];
     }
 }
