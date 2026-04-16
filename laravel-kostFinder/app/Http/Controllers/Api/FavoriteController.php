@@ -3,65 +3,99 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Favorite;
 use App\Http\Resources\FavoriteResource;
+use App\Models\Favorite;
+use App\Models\Kost;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class FavoriteController extends Controller
 {
-
     // GET /api/favorite
     public function index()
     {
-        $favorites = Favorite::all();
+        $favorites = Favorite::with(['user', 'kost'])->latest()->get();
 
         return response()->json([
-            "success" => true,
-            "message" => "Daftar favorite berhasil diambil",
-            "data" => FavoriteResource::collection($favorites)
+            'success' => true,
+            'message' => 'Daftar favorit berhasil diambil',
+            'data'    => FavoriteResource::collection($favorites),
         ]);
     }
 
+    // GET /api/favorite/stats
+    public function stats()
+    {
+        $total     = Favorite::count();
+        $perKost   = Favorite::all()->groupBy('kost_id')->map->count()->sortDesc();
+        $topKostId = $perKost->keys()->first();
+        $topKost   = $topKostId ? Kost::find($topKostId) : null;
+        $userCount = Favorite::all()->groupBy('user_id')->count();
+        $avg       = $userCount > 0 ? round($total / $userCount, 1) : 0;
+
+        return response()->json([
+            'success' => true,
+            'data'    => [
+                'total'         => $total,
+                'top_kost_nama' => $topKost?->nama_kost ?? '-',
+                'avg_per_user'  => $avg,
+            ],
+        ]);
+    }
 
     // GET /api/favorite/{id}
     public function show($id)
     {
-        $favorite = Favorite::find($id);
+        $favorite = Favorite::with(['user', 'kost'])->find($id);
 
         if (!$favorite) {
             return response()->json([
-                "success" => false,
-                "message" => "Favorite tidak ditemukan"
+                'success' => false,
+                'message' => 'Favorit tidak ditemukan',
             ], 404);
         }
 
         return response()->json([
-            "success" => true,
-            "data" => new FavoriteResource($favorite)
+            'success' => true,
+            'data'    => new FavoriteResource($favorite),
         ]);
     }
-
 
     // POST /api/favorite
     public function store(Request $request)
     {
         $request->validate([
-            "user_id" => "required",
-            "kost_id" => "required"
+            'kost_id' => 'required|string',
         ]);
+
+        $userId = (string) Auth::id();
+        $kostId = $request->kost_id;
+
+        // Cegah duplikat
+        $existing = Favorite::where('user_id', $userId)
+            ->where('kost_id', $kostId)
+            ->first();
+
+        if ($existing) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Kost sudah ada di daftar favorit.',
+            ], 409);
+        }
 
         $favorite = Favorite::create([
-            "user_id" => $request->user_id,
-            "kost_id" => $request->kost_id
+            'user_id' => $userId,
+            'kost_id' => $kostId,
         ]);
 
+        $favorite->load(['user', 'kost']);
+
         return response()->json([
-            "success" => true,
-            "message" => "Kost berhasil ditambahkan ke favorite",
-            "data" => new FavoriteResource($favorite)
+            'success' => true,
+            'message' => 'Kost berhasil ditambahkan ke favorit',
+            'data'    => new FavoriteResource($favorite),
         ], 201);
     }
-
 
     // DELETE /api/favorite/{id}
     public function destroy($id)
@@ -70,17 +104,16 @@ class FavoriteController extends Controller
 
         if (!$favorite) {
             return response()->json([
-                "success" => false,
-                "message" => "Favorite tidak ditemukan"
+                'success' => false,
+                'message' => 'Favorit tidak ditemukan',
             ], 404);
         }
 
         $favorite->delete();
 
         return response()->json([
-            "success" => true,
-            "message" => "Favorite berhasil dihapus"
+            'success' => true,
+            'message' => 'Favorit berhasil dihapus',
         ]);
     }
-
 }

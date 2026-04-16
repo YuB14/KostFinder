@@ -29,10 +29,13 @@ class User extends Authenticatable
 
     protected $casts = [
         'email_verified_at' => 'datetime',
-        'password' => 'hashed',
+        'last_login_at'     => 'datetime',
+        'created_at'        => 'datetime',
+        'updated_at'        => 'datetime',
+        'password'          => 'hashed',
     ];
 
-        // Relasi ke review
+    // Relasi ke review
     public function reviews()
     {
         return $this->hasMany(Review::class);

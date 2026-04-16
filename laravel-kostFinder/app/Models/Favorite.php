@@ -11,7 +11,7 @@ class Favorite extends Model
 
     protected $fillable = [
         'user_id',
-        'kost_id'
+        'kost_id',
     ];
 
     public function user()

@@ -13,7 +13,12 @@ class Review extends Model
         'user_id',
         'kost_id',
         'rating',
-        'komentar'
+        'komentar',
+        'status',   // Menunggu | Disetujui | Ditolak
+    ];
+
+    protected $casts = [
+        'rating' => 'integer',
     ];
 
     public function user()
@@ -23,6 +28,6 @@ class Review extends Model
 
     public function kost()
     {
-        return $this->belongsTo(Kost::class);
+        return $this->belongsTo(Kost::class, 'kost_id', '_id');
     }
 }

@@ -1,54 +1,39 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\Api\AuthController;
-use App\Http\Controllers\MLController;
 
+// ─── Halaman Auth (hanya untuk tamu/belum login) ──────────────
+Route::middleware('guest')->group(function () {
+    Route::get('/login',    fn() => view('auth.login-register'))->name('login');
+    Route::get('/register', fn() => view('auth.login-register'))->name('register');
+});
+
+Route::post('/login',   [AuthController::class, 'login'])->name('auth.login');
+Route::post('/register',[AuthController::class, 'register'])->name('auth.register');
+Route::post('/logout',  [AuthController::class, 'logout'])->name('logout')->middleware('auth');
+
+// ─── Halaman Admin (harus login + role admin) ─────────────────
+Route::middleware(['auth', 'admin'])->group(function () {
+    Route::get('/dashboard', fn() => view('admin.pages.dashboard'))->name('dashboard');
+    Route::get('/user',      fn() => view('admin.pages.user'))->name('user');
+    Route::get('/kost',      fn() => view('admin.pages.kost'))->name('kost');
+    Route::get('/review',    fn() => view('admin.pages.review'))->name('review');
+    Route::get('/favorite',  fn() => view('admin.pages.favorite'))->name('favorite');
+});
+
+// ─── Halaman User (harus login) ──────────────────────────────
+Route::middleware('auth')->prefix('user')->name('user.')->group(function () {
+    Route::get('/dashboard', fn() => view('user.pages.dashboard-user'))->name('dashboard');
+    Route::get('/kost',      fn() => view('user.pages.kost-user'))->name('kost');
+    Route::get('/review',    fn() => view('user.pages.review-user'))->name('review');
+    Route::get('/favorite',  fn() => view('user.pages.favorite-user'))->name('favorite');
+    Route::get('/prediksi',  fn() => view('user.pages.prediksi-user'))->name('prediksi');
+});
+
+// ─── Landing Page ──────────────────────────────────────────────
 Route::get('/', function () {
     return view('index');
 });
 
-Route::get('/train-model', [MLController::class, 'trainModel']);
-
-Route::get('/login', function () {
-    return view('auth.login-register');
-})->name('login');
-Route::post('/login', [AuthController::class, 'login']);
-
-Route::get('/register', function () {
-    return view('auth.login-register');
-})->name('register');
-Route::post('/register', [AuthController::class, 'register']);
-
-// Halaman Utama / Dashboard
-Route::get('/dashboard', function () {
-    return view('pages.dashboard');
-})->name('dashboard')->middleware('auth');
-
-// Halaman Data Pengguna
-Route::get('/user', function () {
-    return view('pages.user');
-})->name('user');
-
-// Halaman Data Kost
-Route::get('/kost', function () {
-    return view('pages.kost');
-})->name('kost');
-
-// Halaman Ulasan
-Route::get('/review', function () {
-    return view('pages.review');
-})->name('review');
-
-// Halaman Favorite
-Route::get('/favorite', function () {
-    return view('pages.favorite');
-})->name('favorite');
-
-// Route untuk Logout
-Route::post('/logout', function() {
-    Auth::logout(); // Jika sudah pakai sistem auth
-    return redirect('/'); // Kirim ke halaman login atau home
-})->name('logout');

@@ -11,15 +11,19 @@ class Kost extends Model
 
     protected $fillable = [
         'nama_kost',
-        'alamat',
-        'wifi',
-        'listrik',
+        'foto_kost',
+        'alamat_kost',
+        'kelas',
+        'jenis_kost',
+        'status',
         'fasilitas',
-        'pendingin_ruangan',
-        'kamar_mandi',
-        'parkir_motor',
-        'ukuran_kamar',
-        'harga'
+        'harga_kost',
+        'nomor_telepon',
+    ];
+
+    // Cast harga ke float agar konsisten dari DB
+    protected $casts = [
+        'harga_kost' => 'float',
     ];
 
     public function reviews()
