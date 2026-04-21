@@ -26,6 +26,7 @@ class DashboardController extends Controller
         $avgRating = Review::avg('rating') ? round((float) Review::avg('rating'), 2) : 0;
 
         // ── Bulan ini vs bulan lalu ───────────────────────────────────────
+<<<<<<< HEAD
         $kostThisMonth = Kost::whereBetween('created_at', [$thisMonthStart, $now])->count();
         $kostLastMonth = Kost::whereBetween('created_at', [$lastMonthStart, $lastMonthEnd])->count();
 
@@ -37,6 +38,20 @@ class DashboardController extends Controller
 
         $ratingThisMonth = Review::whereBetween('created_at', [$thisMonthStart, $now])->avg('rating') ?? 0;
         $ratingLastMonth = Review::whereBetween('created_at', [$lastMonthStart, $lastMonthEnd])->avg('rating') ?? 0;
+=======
+        $kostThisMonth   = $this->countInRange($totalKost,   $thisMonthStart, $now);
+        $kostLastMonth   = $this->countInRange($totalKost,   $lastMonthStart, $lastMonthEnd);
+
+        $userThisMonth   = $this->countInRange($totalUser,   $thisMonthStart, $now);
+        $userLastMonth   = $this->countInRange($totalUser,   $lastMonthStart, $lastMonthEnd);
+
+        // Filter langsung di level database
+        $kostThisMonth = Kost::whereBetween('created_at', [$thisMonthStart, $now])->count();
+        $kostLastMonth = Kost::whereBetween('created_at', [$lastMonthStart, $lastMonthEnd])->count();
+
+        $favThisMonth    = $this->countInRange($totalFav,    $thisMonthStart, $now);
+        $favLastMonth    = $this->countInRange($totalFav,    $lastMonthStart, $lastMonthEnd);
+>>>>>>> 80adf3bb40276f2cb22b39e9ba1911ec51435195
 
         return response()->json([
             'success' => true,
@@ -46,7 +61,11 @@ class DashboardController extends Controller
                 'total_user'    => (int) $totalUser,
                 'user_change'   => $this->calcChange($userThisMonth,   $userLastMonth),
                 'avg_rating'    => $avgRating,
+<<<<<<< HEAD
                 'rating_change' => $this->calcChange($ratingThisMonth, $ratingLastMonth),
+=======
+                'rating_change' => $this->calcChange($kostThisMonth, $kostLastMonth),
+>>>>>>> 80adf3bb40276f2cb22b39e9ba1911ec51435195
                 'total_fav'     => (int) $totalFav,
                 'fav_change'    => $this->calcChange($favThisMonth,    $favLastMonth),
             ],
@@ -289,9 +308,15 @@ class DashboardController extends Controller
     /**
      * Hitung persentase perubahan.
      */
+<<<<<<< HEAD
     private function calcChange(float $current, float $previous): float
     {
         if ($previous == 0) return $current > 0 ? 100.0 : 0.0;
+=======
+    private function calcChange(int $current, int $previous): float
+    {
+        if ($previous === 0) return $current > 0 ? 100.0 : 0.0;
+>>>>>>> 80adf3bb40276f2cb22b39e9ba1911ec51435195
         return round((($current - $previous) / $previous) * 100, 1);
     }
 }

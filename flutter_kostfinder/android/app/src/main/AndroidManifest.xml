@@ -1,7 +1,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<<<<<<< HEAD
 
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
 
+=======
+>>>>>>> 80adf3bb40276f2cb22b39e9ba1911ec51435195
     <application
         android:label="flutter_kostfinder"
         android:name="${applicationName}"
