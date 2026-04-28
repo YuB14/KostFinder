@@ -84,7 +84,7 @@ class _MainScreenState extends State<MainScreen> {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   ..._leftTabs.map((t) => _buildItem(t, muted)),
-                  _buildPrediksiItem(muted),
+                  _buildReviewItem(muted),
                   ..._rightTabs.map((t) => _buildItem(t, muted)),
                 ],
               ),
@@ -95,10 +95,10 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
-  Widget _buildPrediksiItem(Color muted) {
-    final active = _currentIndex == 4;
+  Widget _buildReviewItem(Color muted) {
+    final active = _currentIndex == 2;
     return GestureDetector(
-      onTap: () => setState(() => _currentIndex = 4),
+      onTap: () => setState(() => _currentIndex = 2),
       behavior: HitTestBehavior.opaque,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
@@ -111,9 +111,9 @@ class _MainScreenState extends State<MainScreen> {
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.auto_graph_rounded, size: 22, color: active ? AppColors.coral : muted),
+            Icon(Icons.rate_review_rounded, size: 22, color: active ? AppColors.coral : muted),
             const SizedBox(height: 2),
-            Text('Prediksi', style: TextStyle(fontSize: 9, fontWeight: active ? FontWeight.w700 : FontWeight.w500, color: active ? AppColors.coral : muted, height: 1.0)),
+            Text('Review', style: TextStyle(fontSize: 9, fontWeight: active ? FontWeight.w700 : FontWeight.w500, color: active ? AppColors.coral : muted, height: 1.0)),
           ],
         ),
       ),

@@ -4,9 +4,11 @@ import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import '../theme/app_theme.dart';
 import '../services/api_service.dart';
+import 'kost_screen.dart';
 
 class AddKostScreen extends StatefulWidget {
-  const AddKostScreen({super.key});
+  final KostData? editKost;
+  const AddKostScreen({super.key, this.editKost});
 
   @override
   State<AddKostScreen> createState() => _AddKostScreenState();
@@ -30,13 +32,40 @@ class _AddKostScreenState extends State<AddKostScreen> {
   final ImagePicker _picker = ImagePicker();
   List<XFile> _selectedImages = [];
 
+  bool get _isEdit => widget.editKost != null;
+
+  @override
+  void initState() {
+    super.initState();
+    if (_isEdit) {
+      final k = widget.editKost!;
+      _namaCtrl.text = k.name;
+      _alamatCtrl.text = k.location;
+      _kontakCtrl.text = k.ownerNumber;
+      _deskripsiCtrl.text = k.description;
+      _fasilitasCtrl.text = k.facilities.join(', ');
+      _selectedTipe = k.type;
+      _selectedKelas = k.roomClass;
+
+      // Harga: strip prefix "Rp " dan format ulang
+      final rawHarga = k.price.replaceAll('Rp ', '').replaceAll('.', '').trim();
+      final intHarga = int.tryParse(rawHarga);
+      if (intHarga != null) {
+        _hargaCtrl.text = intHarga
+            .toString()
+            .replaceAllMapped(
+              RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+              (m) => '${m[1]}.',
+            );
+      }
+    }
+  }
+
   Future<void> _pickImages() async {
     try {
       final List<XFile> images = await _picker.pickMultiImage();
       if (images.isNotEmpty) {
-        setState(() {
-          _selectedImages.addAll(images);
-        });
+        setState(() => _selectedImages.addAll(images));
       }
     } catch (e) {
       debugPrint("Error picking images: $e");
@@ -44,9 +73,7 @@ class _AddKostScreenState extends State<AddKostScreen> {
   }
 
   void _removeImage(int index) {
-    setState(() {
-      _selectedImages.removeAt(index);
-    });
+    setState(() => _selectedImages.removeAt(index));
   }
 
   final _tipeList = ['Pria', 'Wanita', 'Bebas'];
@@ -69,27 +96,46 @@ class _AddKostScreenState extends State<AddKostScreen> {
       return;
     }
     setState(() => _isSubmitting = true);
-    
+
     try {
-      final res = await ApiService.addKost(
-        namaKost: _namaCtrl.text,
-        alamatKost: _alamatCtrl.text,
-        kelas: _selectedKelas,
-        jenisKost: _selectedTipe,
-        status: 'Aktif', // Admin menambah kost -> Langsung aktif
-        fasilitas: _fasilitasCtrl.text,
-        hargaKost: _hargaCtrl.text.replaceAll('.', ''),
-        nomorTelepon: _kontakCtrl.text,
-        deskripsi: _deskripsiCtrl.text,
-        fotoPaths: _selectedImages.map((e) => e.path).toList(),
-      );
+      final hargaBersih = _hargaCtrl.text.replaceAll('.', '');
+
+      Map<String, dynamic> res;
+      if (_isEdit) {
+        res = await ApiService.updateKost(
+          id: widget.editKost!.id,
+          namaKost: _namaCtrl.text,
+          alamatKost: _alamatCtrl.text,
+          kelas: _selectedKelas,
+          jenisKost: _selectedTipe,
+          status: widget.editKost!.status,
+          fasilitas: _fasilitasCtrl.text,
+          hargaKost: hargaBersih,
+          nomorTelepon: _kontakCtrl.text,
+          deskripsi: _deskripsiCtrl.text,
+          fotoPaths: _selectedImages.map((e) => e.path).toList(),
+        );
+      } else {
+        res = await ApiService.addKost(
+          namaKost: _namaCtrl.text,
+          alamatKost: _alamatCtrl.text,
+          kelas: _selectedKelas,
+          jenisKost: _selectedTipe,
+          status: 'Aktif',
+          fasilitas: _fasilitasCtrl.text,
+          hargaKost: hargaBersih,
+          nomorTelepon: _kontakCtrl.text,
+          deskripsi: _deskripsiCtrl.text,
+          fotoPaths: _selectedImages.map((e) => e.path).toList(),
+        );
+      }
 
       if (!mounted) return;
       if (res['success'] == true) {
         _showSuccessSheet();
       } else {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(res['message'] ?? 'Gagal menambahkan kost'),
+          content: Text(res['message'] ?? (_isEdit ? 'Gagal mengupdate kost' : 'Gagal menambahkan kost')),
           backgroundColor: AppColors.coral,
         ));
       }
@@ -123,12 +169,18 @@ class _AddKostScreenState extends State<AddKostScreen> {
               child: const Icon(Icons.check_rounded, color: AppColors.teal, size: 38),
             ),
             const SizedBox(height: 16),
-            Text('Kost Berhasil Ditambahkan!',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800,
-                    color: isDark ? AppColors.textDark : AppColors.textLight)),
+            Text(
+              _isEdit ? 'Kost Berhasil Diperbarui!' : 'Kost Berhasil Ditambahkan!',
+              style: TextStyle(
+                fontSize: 18, fontWeight: FontWeight.w800,
+                color: isDark ? AppColors.textDark : AppColors.textLight,
+              ),
+            ),
             const SizedBox(height: 8),
             Text(
-              '"${_namaCtrl.text}" berhasil didaftarkan dan sudah berstatus Aktif di platform.',
+              _isEdit
+                  ? '"${_namaCtrl.text}" berhasil diperbarui.'
+                  : '"${_namaCtrl.text}" berhasil didaftarkan dan sudah berstatus Aktif di platform.',
               textAlign: TextAlign.center,
               style: const TextStyle(fontSize: 13, color: AppColors.teal, height: 1.5),
             ),
@@ -137,8 +189,8 @@ class _AddKostScreenState extends State<AddKostScreen> {
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: () {
-                  Navigator.pop(context); 
-                  Navigator.pop(context); 
+                  Navigator.pop(context); // tutup bottom sheet
+                  Navigator.pop(context); // kembali ke daftar kost
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.teal,
@@ -172,7 +224,7 @@ class _AddKostScreenState extends State<AddKostScreen> {
           SliverAppBar(
             floating: false,
             pinned: true,
-            backgroundColor: AppColors.teal,
+            backgroundColor: _isEdit ? AppColors.coral : AppColors.teal,
             leading: IconButton(
               icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 18),
               onPressed: () => Navigator.pop(context),
@@ -185,14 +237,23 @@ class _AddKostScreenState extends State<AddKostScreen> {
                     color: Colors.white.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Icon(Icons.home_work_rounded, color: Colors.white, size: 20),
+                  child: Icon(
+                    _isEdit ? Icons.edit_rounded : Icons.home_work_rounded,
+                    color: Colors.white, size: 20,
+                  ),
                 ),
                 const SizedBox(width: 12),
-                const Column(
+                Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Tambah Kost', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: -0.5)),
-                    Text('KostFinder - Listing Baru', style: TextStyle(fontSize: 11, color: Colors.white70)),
+                    Text(
+                      _isEdit ? 'Edit Kost' : 'Tambah Kost',
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: -0.5),
+                    ),
+                    Text(
+                      _isEdit ? 'Perbarui data listing kost' : 'KostFinder - Listing Baru',
+                      style: const TextStyle(fontSize: 11, color: Colors.white70),
+                    ),
                   ],
                 ),
               ],
@@ -204,17 +265,23 @@ class _AddKostScreenState extends State<AddKostScreen> {
             padding: const EdgeInsets.all(16),
             sliver: SliverList(
               delegate: SliverChildListDelegate([
-                _StepIndicator(current: _currentStep, total: 4, isDark: isDark, border: border, bg2: bg2, textColor: textColor, muted: muted),
+                _StepIndicator(
+                  current: _currentStep, total: 4,
+                  isDark: isDark, border: border, bg2: bg2,
+                  textColor: textColor, muted: muted,
+                  accentColor: _isEdit ? AppColors.coral : AppColors.teal,
+                ),
                 const SizedBox(height: 20),
 
                 Form(
                   key: _formKey,
                   child: Column(children: [
+                    // ─── STEP 1: Info Dasar ───────────────────────────────────
                     _SectionCard(
                       title: 'Informasi Dasar',
                       icon: Icons.info_rounded,
-                      accentColor: AppColors.teal,
-                      accentBg: AppColors.tealBg,
+                      accentColor: _isEdit ? AppColors.coral : AppColors.teal,
+                      accentBg: _isEdit ? AppColors.coralBg : AppColors.tealBg,
                       isDark: isDark, card: card, border: border,
                       onTap: () => setState(() => _currentStep = 0),
                       isActive: _currentStep == 0,
@@ -259,6 +326,7 @@ class _AddKostScreenState extends State<AddKostScreen> {
                     ),
                     const SizedBox(height: 12),
 
+                    // ─── STEP 2: Detail Kamar ─────────────────────────────────
                     _SectionCard(
                       title: 'Detail Kamar',
                       icon: Icons.bedroom_parent_rounded,
@@ -273,7 +341,8 @@ class _AddKostScreenState extends State<AddKostScreen> {
                           value: _selectedTipe,
                           items: _tipeList,
                           onChanged: (v) => setState(() => _selectedTipe = v),
-                          isDark: isDark, card: card, border: border, textColor: textColor, muted: muted,
+                          isDark: isDark, card: card, border: border,
+                          textColor: textColor, muted: muted,
                         ),
                         const SizedBox(height: 14),
                         _SelectableCardRow(
@@ -281,7 +350,8 @@ class _AddKostScreenState extends State<AddKostScreen> {
                           value: _selectedKelas,
                           items: _kelasList,
                           onChanged: (v) => setState(() => _selectedKelas = v),
-                          isDark: isDark, card: card, border: border, textColor: textColor, muted: muted,
+                          isDark: isDark, card: card, border: border,
+                          textColor: textColor, muted: muted,
                         ),
                         const SizedBox(height: 14),
                         _FormField(
@@ -299,8 +369,7 @@ class _AddKostScreenState extends State<AddKostScreen> {
                           prefixText: 'Rp ',
                           validator: (v) {
                             if (v == null || v.trim().isEmpty) return 'Harga wajib diisi';
-                            final cleanStr = v.replaceAll('.', '');
-                            final n = int.tryParse(cleanStr);
+                            final n = int.tryParse(v.replaceAll('.', ''));
                             if (n == null || n < 100000) return 'Harga minimal Rp 100.000';
                             return null;
                           },
@@ -319,6 +388,7 @@ class _AddKostScreenState extends State<AddKostScreen> {
                     ),
                     const SizedBox(height: 12),
 
+                    // ─── STEP 3: Fasilitas ────────────────────────────────────
                     _SectionCard(
                       title: 'Fasilitas',
                       icon: Icons.checklist_rounded,
@@ -328,8 +398,10 @@ class _AddKostScreenState extends State<AddKostScreen> {
                       onTap: () => setState(() => _currentStep = 2),
                       isActive: _currentStep == 2,
                       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        Text('Tuliskan fasilitas yang tersedia di kost ini, pisahkan dengan koma.',
-                            style: TextStyle(fontSize: 12, color: muted, fontStyle: FontStyle.italic)),
+                        Text(
+                          'Tuliskan fasilitas yang tersedia, pisahkan dengan koma.',
+                          style: TextStyle(fontSize: 12, color: muted, fontStyle: FontStyle.italic),
+                        ),
                         const SizedBox(height: 12),
                         _FormField(
                           controller: _fasilitasCtrl,
@@ -345,58 +417,54 @@ class _AddKostScreenState extends State<AddKostScreen> {
                     ),
                     const SizedBox(height: 12),
 
+                    // ─── STEP 4: Foto ─────────────────────────────────────────
                     _SectionCard(
                       title: 'Foto Kost',
                       icon: Icons.photo_library_rounded,
-                      accentColor: AppColors.teal,
-                      accentBg: AppColors.tealBg,
+                      accentColor: _isEdit ? AppColors.coral : AppColors.teal,
+                      accentBg: _isEdit ? AppColors.coralBg : AppColors.tealBg,
                       isDark: isDark, card: card, border: border,
                       onTap: () => setState(() => _currentStep = 3),
                       isActive: _currentStep == 3,
                       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        Text('Tambahkan foto kost untuk memperlengkap informasi',
-                            style: TextStyle(fontSize: 12, color: muted, fontStyle: FontStyle.italic)),
+                        Text(
+                          _isEdit
+                              ? 'Pilih foto baru untuk mengganti foto saat ini (opsional).'
+                              : 'Tambahkan foto kost untuk memperlengkap informasi.',
+                          style: TextStyle(fontSize: 12, color: muted, fontStyle: FontStyle.italic),
+                        ),
                         const SizedBox(height: 12),
-                        if (_selectedImages.isNotEmpty)
+                        if (_selectedImages.isNotEmpty) ...[
                           SizedBox(
                             height: 100,
                             child: ListView.separated(
                               scrollDirection: Axis.horizontal,
                               itemCount: _selectedImages.length,
-                              separatorBuilder: (context, index) => const SizedBox(width: 8),
-                              itemBuilder: (context, index) {
-                                return Stack(
-                                  children: [
-                                    ClipRRect(
-                                      borderRadius: BorderRadius.circular(8),
-                                      child: Image.file(
-                                        File(_selectedImages[index].path),
-                                        width: 100,
-                                        height: 100,
-                                        fit: BoxFit.cover,
-                                      ),
+                              separatorBuilder: (_, __) => const SizedBox(width: 8),
+                              itemBuilder: (_, index) => Stack(children: [
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: Image.file(
+                                    File(_selectedImages[index].path),
+                                    width: 100, height: 100, fit: BoxFit.cover,
+                                  ),
+                                ),
+                                Positioned(
+                                  top: 4, right: 4,
+                                  child: GestureDetector(
+                                    onTap: () => _removeImage(index),
+                                    child: Container(
+                                      padding: const EdgeInsets.all(4),
+                                      decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle),
+                                      child: const Icon(Icons.close_rounded, size: 14, color: Colors.white),
                                     ),
-                                    Positioned(
-                                      top: 4,
-                                      right: 4,
-                                      child: GestureDetector(
-                                        onTap: () => _removeImage(index),
-                                        child: Container(
-                                          padding: const EdgeInsets.all(4),
-                                          decoration: const BoxDecoration(
-                                            color: Colors.black54,
-                                            shape: BoxShape.circle,
-                                          ),
-                                          child: const Icon(Icons.close_rounded, size: 14, color: Colors.white),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                );
-                              },
+                                  ),
+                                ),
+                              ]),
                             ),
                           ),
-                        if (_selectedImages.isNotEmpty) const SizedBox(height: 12),
+                          const SizedBox(height: 12),
+                        ],
                         GestureDetector(
                           onTap: _pickImages,
                           child: Container(
@@ -405,44 +473,46 @@ class _AddKostScreenState extends State<AddKostScreen> {
                             decoration: BoxDecoration(
                               color: bg2,
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: border, width: 1.5, style: BorderStyle.solid),
+                              border: Border.all(color: border, width: 1.5),
                             ),
-                            child: Column(
-                              children: [
-                                Icon(Icons.add_a_photo_rounded, size: 32, color: muted),
-                                const SizedBox(height: 8),
-                                Text('Pilih Foto', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: muted)),
-                              ],
-                            ),
+                            child: Column(children: [
+                              Icon(Icons.add_a_photo_rounded, size: 32, color: muted),
+                              const SizedBox(height: 8),
+                              Text('Pilih Foto', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: muted)),
+                            ]),
                           ),
                         ),
                       ]),
                     ),
                     const SizedBox(height: 20),
 
+                    // ─── Submit Button ────────────────────────────────────────
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
                         onPressed: _isSubmitting ? null : _submit,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.teal,
+                          backgroundColor: _isEdit ? AppColors.coral : AppColors.teal,
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                           elevation: 0,
                         ),
                         child: _isSubmitting
                             ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                            : const Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                                Icon(Icons.upload_rounded, color: Colors.white, size: 18),
-                                SizedBox(width: 8),
-                                Text('Daftarkan Kost', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white)),
+                            : Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                                Icon(_isEdit ? Icons.save_rounded : Icons.upload_rounded, color: Colors.white, size: 18),
+                                const SizedBox(width: 8),
+                                Text(
+                                  _isEdit ? 'Simpan Perubahan' : 'Daftarkan Kost',
+                                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white),
+                                ),
                               ]),
                       ),
                     ),
                     const SizedBox(height: 8),
                     Center(
                       child: Text(
-                        'Data akan diverifikasi oleh tim KostFinder',
+                        _isEdit ? 'Perubahan akan langsung tersimpan' : 'Data akan diverifikasi oleh tim KostFinder',
                         style: TextStyle(fontSize: 11, color: muted),
                       ),
                     ),
@@ -458,14 +528,17 @@ class _AddKostScreenState extends State<AddKostScreen> {
   }
 }
 
+// ─── Step Indicator ──────────────────────────────────────────────────────────
+
 class _StepIndicator extends StatelessWidget {
   final int current, total;
   final bool isDark;
-  final Color border, bg2, textColor, muted;
+  final Color border, bg2, textColor, muted, accentColor;
 
   const _StepIndicator({
     required this.current, required this.total, required this.isDark,
-    required this.border, required this.bg2, required this.textColor, required this.muted,
+    required this.border, required this.bg2, required this.textColor,
+    required this.muted, required this.accentColor,
   });
 
   static const _labels = ['Info Dasar', 'Detail Kamar', 'Fasilitas', 'Foto'];
@@ -480,7 +553,7 @@ class _StepIndicator extends StatelessWidget {
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 300),
               height: 2,
-              color: stepBefore < current ? AppColors.teal : border,
+              color: stepBefore < current ? accentColor : border,
             ),
           );
         }
@@ -493,31 +566,33 @@ class _StepIndicator extends StatelessWidget {
             width: 30, height: 30,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: isDone ? AppColors.teal : (isActive ? AppColors.teal.withOpacity(0.15) : bg2),
+              color: isDone ? accentColor : (isActive ? accentColor.withOpacity(0.15) : bg2),
               border: Border.all(
-                color: (isActive || isDone) ? AppColors.teal : border,
+                color: (isActive || isDone) ? accentColor : border,
                 width: 2,
               ),
             ),
             child: Center(
               child: isDone
-                  ? const Icon(Icons.check_rounded, size: 14, color: AppColors.teal)
+                  ? Icon(Icons.check_rounded, size: 14, color: accentColor)
                   : Text('${step + 1}', style: TextStyle(
                       fontSize: 12, fontWeight: FontWeight.w700,
-                      color: isActive ? AppColors.teal : muted,
+                      color: isActive ? accentColor : muted,
                     )),
             ),
           ),
           const SizedBox(height: 4),
           Text(_labels[step], style: TextStyle(
             fontSize: 10, fontWeight: FontWeight.w600,
-            color: (isActive || isDone) ? AppColors.teal : muted,
+            color: (isActive || isDone) ? accentColor : muted,
           )),
         ]);
       }),
     );
   }
 }
+
+// ─── Section Card ─────────────────────────────────────────────────────────────
 
 class _SectionCard extends StatelessWidget {
   final String title;
@@ -584,6 +659,8 @@ class _SectionCard extends StatelessWidget {
   }
 }
 
+// ─── Form Field ───────────────────────────────────────────────────────────────
+
 class _FormField extends StatelessWidget {
   final TextEditingController controller;
   final String label, hint;
@@ -640,9 +717,10 @@ class _FormField extends StatelessWidget {
   }
 }
 
+// ─── Selectable Card Row ──────────────────────────────────────────────────────
+
 class _SelectableCardRow extends StatelessWidget {
-  final String label;
-  final String value;
+  final String label, value;
   final List<String> items;
   final ValueChanged<String> onChanged;
   final bool isDark;
@@ -691,13 +769,17 @@ class _SelectableCardRow extends StatelessWidget {
   }
 }
 
+// ─── Currency Formatter ───────────────────────────────────────────────────────
+
 class _CurrencyInputFormatter extends TextInputFormatter {
   @override
   TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
     if (newValue.text.isEmpty) return newValue;
     final intValue = int.tryParse(newValue.text.replaceAll(RegExp(r'[^0-9]'), ''));
     if (intValue == null) return oldValue;
-    final newText = intValue.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.');
+    final newText = intValue.toString().replaceAllMapped(
+      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.',
+    );
     return TextEditingValue(
       text: newText,
       selection: TextSelection.collapsed(offset: newText.length),

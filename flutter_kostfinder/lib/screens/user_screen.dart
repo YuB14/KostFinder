@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import '../widgets/shared_widgets.dart';
 import '../services/api_service.dart';
+import '../widgets/shared_app_bar.dart';
 
 class UserScreen extends StatefulWidget {
   const UserScreen({super.key});
@@ -278,7 +279,7 @@ class _UserScreenState extends State<UserScreen> {
     final textColor = isDark ? AppColors.textDark : AppColors.textLight;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Pengguna')),
+      appBar: const SharedAppBar(),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -292,8 +293,8 @@ class _UserScreenState extends State<UserScreen> {
               
               final now = DateTime.now();
               final int thisMonth = _users.where((u) {
-                if (u['created_at'] == null) return false;
-                final date = DateTime.tryParse(u['created_at'].toString());
+                if (u['created_at_iso'] == null) return false;
+                final date = DateTime.tryParse(u['created_at_iso'].toString());
                 return date != null && date.year == now.year && date.month == now.month;
               }).length;
               
@@ -378,7 +379,7 @@ class _UserScreenState extends State<UserScreen> {
                 final email = u['email'] ?? '-';
                 final role = u['role'] ?? 'user';
                 final status = u['status'] ?? 'Tidak Aktif';
-                final joined = u['created_at'] != null ? u['created_at'].toString().substring(0, 10) : '-';
+                final joined = u['created_at']?.toString() ?? '-';
                 final photo = ApiService.getImageUrl(u['photo']?.toString() ?? u['profile_picture']?.toString());
                 final isActive = status == 'Aktif';
 

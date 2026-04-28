@@ -35,6 +35,7 @@ class UserResource extends JsonResource
             'status'          => $isAktif ? 'Aktif' : 'Tidak Aktif',
             'favorites_count' => (int) ($this->favorites_count ?? 0),
             'created_at'      => $createdAtCarbon ? $createdAtCarbon->format('d M Y') : null,
+            'created_at_iso'  => $createdAtCarbon ? $createdAtCarbon->toIso8601String() : null,
         ];
     }
 

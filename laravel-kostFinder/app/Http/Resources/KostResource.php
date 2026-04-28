@@ -8,16 +8,13 @@ class KostResource extends JsonResource
 {
     public function toArray($request): array
     {
-        // ID MongoDB → string
         $id = (string) ($this->_id ?? $this->id ?? '');
 
-        // Foto: jika path relatif, wrap dengan asset()
         $foto = $this->foto_kost ?? null;
         if ($foto && !str_starts_with((string) $foto, 'http')) {
             $foto = asset('storage/' . $foto);
         }
 
-<<<<<<< HEAD
         // Hitung avg_rating & reviews_count HANYA untuk review yang Disetujui
         try {
             $allReviews   = $this->reviews ?? collect();
@@ -25,14 +22,6 @@ class KostResource extends JsonResource
             $reviewsCount = $reviews->count();
             $avgRating    = $reviewsCount > 0
                 ? round((float) $reviews->avg('rating'), 2)
-=======
-        // Hitung avg_rating & reviews_count dari relasi
-        try {
-            $reviews      = $this->reviews ?? collect();
-            $reviewsCount = is_countable($reviews) ? (int) count($reviews) : 0;
-            $avgRating    = $reviewsCount > 0
-                ? round((float) collect($reviews)->avg('rating'), 2)
->>>>>>> 80adf3bb40276f2cb22b39e9ba1911ec51435195
                 : 0;
         } catch (\Throwable $e) {
             $reviewsCount = 0;

@@ -13,11 +13,7 @@ import 'package:flutter_kostfinder/main.dart';
 void main() {
   testWidgets('Counter increments smoke test', (WidgetTester tester) async {
     // Build our app and trigger a frame.
-<<<<<<< HEAD
     await tester.pumpWidget(const KostFinderApp());
-=======
-    await tester.pumpWidget(const MyApp());
->>>>>>> 80adf3bb40276f2cb22b39e9ba1911ec51435195
 
     // Verify that our counter starts at 0.
     expect(find.text('0'), findsOneWidget);

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import '../widgets/shared_widgets.dart';
 import '../services/api_service.dart';
+import '../widgets/shared_app_bar.dart';
+import 'package:intl/intl.dart';
 
 class FavoriteScreen extends StatefulWidget {
   const FavoriteScreen({super.key});
@@ -26,18 +28,23 @@ class _FavoriteScreenState extends State<FavoriteScreen> {
       final res = await ApiService.getFavorites();
       if (mounted) {
         setState(() {
-          _favs = res.map<_FavData>((f) => _FavData(
-            id: f['id']?.toString() ?? '',
-            foto: ApiService.getImageUrl(f['kost_foto']?.toString()),
-            emoji: '🏢',
-            name: f['kost_nama'] ?? '-',
-            location: f['kost_alamat'] ?? '-',
-            price: 'Rp ${f['kost_harga'] ?? 0}',
-            status: f['kost_status'] ?? 'Aktif',
-            statusType: f['pill_class'] ?? 'green',
-            hearts: f['fav_count']?.toString() ?? '0',
-            isFav: true,
-          )).toList();
+          _favs = res.map<_FavData>((f) {
+            final priceNum = f['kost_harga'] ?? 0;
+            final priceStr = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0).format(priceNum);
+            
+            return _FavData(
+              id: f['id']?.toString() ?? '',
+              foto: ApiService.getImageUrl(f['kost_foto']?.toString()),
+              emoji: '🏢',
+              name: f['kost_nama'] ?? '-',
+              location: f['kost_alamat'] ?? '-',
+              price: priceStr,
+              status: f['kost_status'] ?? 'Aktif',
+              statusType: f['pill_class'] ?? 'green',
+              hearts: f['fav_count']?.toString() ?? '0',
+              isFav: true,
+            );
+          }).toList();
         });
       }
     } catch (e) {
@@ -74,7 +81,7 @@ class _FavoriteScreenState extends State<FavoriteScreen> {
     final muted = isDark ? AppColors.mutedDark : AppColors.mutedLight;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Favorit')),
+      appBar: const SharedAppBar(),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -146,8 +153,14 @@ class _FavCard extends StatelessWidget {
           decoration: BoxDecoration(gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight,
             colors: [bg2, isDark ? const Color(0xFF243447) : const Color(0xFFC5D8EE)])),
           child: Stack(children: [
-            if (data.foto != null)
-              Positioned.fill(child: Image.network(data.foto!, fit: BoxFit.cover))
+            if (data.foto != null && !data.foto!.toLowerCase().contains('default'))
+              Positioned.fill(
+                child: Image.network(
+                  data.foto!, 
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Center(child: Text(data.emoji, style: const TextStyle(fontSize: 36))),
+                ),
+              )
             else
               Center(child: Text(data.emoji, style: const TextStyle(fontSize: 36))),
             Positioned(top: 8, right: 8,
@@ -178,7 +191,7 @@ class _FavCard extends StatelessWidget {
             Text('/bulan', style: TextStyle(fontSize: 10, color: muted)),
             const SizedBox(height: 8),
             Row(children: [
-              _statusBadge(data.status, data.statusType),
+              _statusBadge(data.status, data.statusType, isDark),
               const Spacer(),
               Text('❤️ ${data.hearts}', style: TextStyle(fontSize: 10, color: muted)),
             ]),
@@ -188,10 +201,18 @@ class _FavCard extends StatelessWidget {
     );
   }
 
-  Widget _statusBadge(String text, String type) {
+  Widget _statusBadge(String text, String type, bool isDark) {
     switch (type) {
+      case 'blue': return PillBadge.blue(text);
       case 'teal': return PillBadge.teal(text);
       case 'yellow': return PillBadge.yellow(text);
+      case 'muted': 
+        return PillBadge(
+          text: text, 
+          color: isDark ? AppColors.mutedDark : AppColors.mutedLight, 
+          bgColor: isDark ? AppColors.bg2Dark : AppColors.bg2Light,
+        );
+      case 'green':
       default: return PillBadge.green(text);
     }
   }

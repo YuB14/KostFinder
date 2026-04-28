@@ -5,6 +5,7 @@ import 'add_kost_screen.dart';
 import 'kost_detail_screen.dart';
 import '../main.dart';
 import '../services/api_service.dart';
+import '../widgets/shared_app_bar.dart';
 
 class KostScreen extends StatefulWidget {
   const KostScreen({super.key});
@@ -16,16 +17,14 @@ class KostScreen extends StatefulWidget {
 class _KostScreenState extends State<KostScreen> {
   bool _isGrid = true;
   String _search = '';
-
   bool _isLoading = true;
   List<KostData> _kosts = [];
+  bool _isAdmin = false;
 
   List<KostData> get _filtered => _kosts.where((k) =>
     k.name.toLowerCase().contains(_search.toLowerCase()) ||
     k.location.toLowerCase().contains(_search.toLowerCase())
   ).toList();
-
-  bool _isAdmin = false;
 
   @override
   void initState() {
@@ -73,7 +72,11 @@ class _KostScreenState extends State<KostScreen> {
     }
 
     final formatCurrency = (dynamic h) => 'Rp ${h ?? 0}';
-    final fasList = (k['fasilitas']?.toString() ?? '').split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+    final fasList = (k['fasilitas']?.toString() ?? '')
+        .split(',')
+        .map((e) => e.trim())
+        .where((e) => e.isNotEmpty)
+        .toList();
 
     return KostData(
       iconData: icon,
@@ -117,44 +120,40 @@ class _KostScreenState extends State<KostScreen> {
     final bg2 = isDark ? AppColors.bg2Dark : AppColors.bg2Light;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Data Kost'),
-        actions: [
-          IconButton(
-            icon: Icon(isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded),
-            onPressed: () {
-              themeNotifier.value = isDark ? ThemeMode.light : ThemeMode.dark;
-            },
-          ),
-        ],
-      ),
+      appBar: const SharedAppBar(),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          PageHeader(title: 'Data ', italic: 'Kost', subtitle: 'Kelola semua listing kost yang terdaftar di platform.'),
-          const SizedBox(height: 16),
-          Builder(
-            builder: (context) {
-              final int totalKost = _kosts.length;
-              final int totalAktif = _kosts.where((k) => k.status.toLowerCase() == 'aktif').length;
-              final double avgRating = totalKost > 0 
-                  ? _kosts.map((k) => double.tryParse(k.rating) ?? 0.0).reduce((a, b) => a + b) / totalKost 
-                  : 0.0;
-                  
-              return GridView.count(
-                crossAxisCount: 2, crossAxisSpacing: 10, mainAxisSpacing: 10,
-                shrinkWrap: true, physics: const NeverScrollableScrollPhysics(),
-                childAspectRatio: 1.55,
-                children: [
-                  StatCard(icon: Icons.home_work_rounded, value: totalKost.toString(), label: 'Total Kost', accentColor: AppColors.coral, accentBg: AppColors.coralBg),
-                  StatCard(icon: Icons.verified_rounded, value: totalAktif.toString(), label: 'Kost Aktif', accentColor: AppColors.teal, accentBg: AppColors.tealBg),
-                  StatCard(icon: Icons.star_rounded, value: avgRating.toStringAsFixed(1), label: 'Avg. Rating', accentColor: AppColors.yellow, accentBg: AppColors.yellowBg),
-                  StatCard(icon: Icons.hourglass_top_rounded, value: '0', label: 'Menunggu Review', accentColor: AppColors.blue, accentBg: AppColors.blueBg),
-                ],
-              );
-            }
+          PageHeader(
+            title: 'Data ',
+            italic: 'Kost',
+            subtitle: 'Kelola semua listing kost yang terdaftar di platform.',
           ),
+          const SizedBox(height: 16),
+
+          // ─── Stat Cards ───────────────────────────────────────────────────
+          Builder(builder: (context) {
+            final int totalKost = _kosts.length;
+            final int totalAktif = _kosts.where((k) => k.status.toLowerCase() == 'aktif').length;
+            final double avgRating = totalKost > 0
+                ? _kosts.map((k) => double.tryParse(k.rating) ?? 0.0).reduce((a, b) => a + b) / totalKost
+                : 0.0;
+
+            return GridView.count(
+              crossAxisCount: 2, crossAxisSpacing: 10, mainAxisSpacing: 10,
+              shrinkWrap: true, physics: const NeverScrollableScrollPhysics(),
+              childAspectRatio: 1.55,
+              children: [
+                StatCard(icon: Icons.home_work_rounded, value: totalKost.toString(), label: 'Total Kost', accentColor: AppColors.coral, accentBg: AppColors.coralBg),
+                StatCard(icon: Icons.verified_rounded, value: totalAktif.toString(), label: 'Kost Aktif', accentColor: AppColors.teal, accentBg: AppColors.tealBg),
+                StatCard(icon: Icons.star_rounded, value: avgRating.toStringAsFixed(1), label: 'Avg. Rating', accentColor: AppColors.yellow, accentBg: AppColors.yellowBg),
+                StatCard(icon: Icons.hourglass_top_rounded, value: '0', label: 'Menunggu Review', accentColor: AppColors.blue, accentBg: AppColors.blueBg),
+              ],
+            );
+          }),
           const SizedBox(height: 20),
+
+          // ─── View Toggle + Search ─────────────────────────────────────────
           Row(children: [
             Container(
               decoration: BoxDecoration(color: bg2, borderRadius: BorderRadius.circular(10)),
@@ -167,20 +166,38 @@ class _KostScreenState extends State<KostScreen> {
             Expanded(child: SearchBar2(hint: 'Cari kost...', onChanged: (v) => setState(() => _search = v))),
           ]),
           const SizedBox(height: 16),
+
+          // ─── Kost List / Grid ─────────────────────────────────────────────
           if (_isLoading)
-            const Padding(padding: EdgeInsets.all(40), child: Center(child: CircularProgressIndicator(color: AppColors.coral)))
+            const Padding(
+              padding: EdgeInsets.all(40),
+              child: Center(child: CircularProgressIndicator(color: AppColors.coral)),
+            )
           else if (_isGrid)
             GridView.count(
               crossAxisCount: 2, crossAxisSpacing: 12, mainAxisSpacing: 12,
               shrinkWrap: true, physics: const NeverScrollableScrollPhysics(),
               childAspectRatio: 0.68,
-              children: _filtered.map((k) => _KostGridCard(kost: k, isDark: isDark, card: card, border: border, muted: muted, textColor: textColor, isAdmin: _isAdmin)).toList(),
+              children: _filtered.map((k) => _KostGridCard(
+                kost: k,
+                isDark: isDark, card: card, border: border,
+                muted: muted, textColor: textColor,
+                isAdmin: _isAdmin,
+                onEdit: _loadKosts,
+              )).toList(),
             )
           else
             Column(children: _filtered.map((k) => Padding(
               padding: const EdgeInsets.only(bottom: 10),
-              child: _KostListCard(kost: k, isDark: isDark, card: card, border: border, muted: muted, textColor: textColor, isAdmin: _isAdmin),
+              child: _KostListCard(
+                kost: k,
+                isDark: isDark, card: card, border: border,
+                muted: muted, textColor: textColor,
+                isAdmin: _isAdmin,
+                onEdit: _loadKosts,
+              ),
             )).toList()),
+
           const SizedBox(height: 80),
         ],
       ),
@@ -199,6 +216,8 @@ class _KostScreenState extends State<KostScreen> {
     );
   }
 }
+
+// ─── View Toggle Button ───────────────────────────────────────────────────────
 
 class _ViewBtn extends StatelessWidget {
   final IconData icon;
@@ -225,52 +244,91 @@ class _ViewBtn extends StatelessWidget {
   }
 }
 
+// ─── Grid Card ────────────────────────────────────────────────────────────────
+
 class _KostGridCard extends StatelessWidget {
   final KostData kost;
-  final bool isDark;
-  final bool isAdmin;
+  final bool isDark, isAdmin;
   final Color card, border, muted, textColor;
-  const _KostGridCard({required this.kost, required this.isDark, required this.card, required this.border, required this.muted, required this.textColor, required this.isAdmin});
+  final VoidCallback? onEdit;
+
+  const _KostGridCard({
+    required this.kost, required this.isDark, required this.card,
+    required this.border, required this.muted, required this.textColor,
+    required this.isAdmin, this.onEdit,
+  });
 
   @override
   Widget build(BuildContext context) {
     final bg2 = isDark ? AppColors.bg2Dark : AppColors.bg2Light;
-    final (badgeColor, badgeBg) = _tierColors(kost.tierType);
+    final (badgeColor, _) = _tierColors(kost.tierType);
+
     return Container(
-      decoration: BoxDecoration(color: card, borderRadius: BorderRadius.circular(14), border: Border.all(color: border),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8)]),
+      decoration: BoxDecoration(
+        color: card,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: border),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8)],
+      ),
       clipBehavior: Clip.hardEdge,
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
-        Container(
+        // ── Foto / Header ──────────────────────────────────────────────────
+        SizedBox(
           height: 90,
-          decoration: BoxDecoration(gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight,
-            colors: [bg2, isDark ? const Color(0xFF243447) : const Color(0xFFC5D8EE)])),
-          child: Stack(children: [
-            Center(child: Container(
-              width: 52, height: 52,
-              decoration: BoxDecoration(
-                color: kost.iconColor.withOpacity(0.12), 
-                shape: BoxShape.circle,
-                image: kost.foto != null ? DecorationImage(image: NetworkImage(kost.foto!), fit: BoxFit.cover) : null,
+          child: Stack(fit: StackFit.expand, children: [
+            // Foto full cover, fallback gradient + icon
+            if (kost.foto != null)
+              Image.network(kost.foto!, fit: BoxFit.cover)
+            else
+              Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft, end: Alignment.bottomRight,
+                    colors: [bg2, isDark ? const Color(0xFF243447) : const Color(0xFFC5D8EE)],
+                  ),
+                ),
+                child: Center(
+                  child: Container(
+                    width: 52, height: 52,
+                    decoration: BoxDecoration(
+                      color: kost.iconColor.withOpacity(0.15),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(kost.iconData, size: 28, color: kost.iconColor),
+                  ),
+                ),
               ),
-              child: kost.foto == null ? Icon(kost.iconData, size: 28, color: kost.iconColor) : null,
-            )),
-            Positioned(top: 8, left: 8, child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-              decoration: BoxDecoration(color: badgeColor, borderRadius: BorderRadius.circular(100)),
-              child: Text(kost.tier, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Colors.white)),
-            )),
+            // Badge tier
+            Positioned(
+              top: 8, left: 8,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: badgeColor.withOpacity(0.85),
+                  borderRadius: BorderRadius.circular(100),
+                ),
+                child: Text(kost.tier, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Colors.white)),
+              ),
+            ),
           ]),
         ),
+
+        // ── Info ───────────────────────────────────────────────────────────
         Padding(
           padding: const EdgeInsets.all(10),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(kost.name, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: textColor), maxLines: 1, overflow: TextOverflow.ellipsis),
+            Text(kost.name,
+              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: textColor),
+              maxLines: 1, overflow: TextOverflow.ellipsis,
+            ),
             const SizedBox(height: 2),
             Row(children: [
               Icon(Icons.location_on_rounded, size: 10, color: muted),
               const SizedBox(width: 2),
-              Expanded(child: Text(kost.location, style: TextStyle(fontSize: 10, color: muted), maxLines: 1, overflow: TextOverflow.ellipsis)),
+              Expanded(child: Text(kost.location,
+                style: TextStyle(fontSize: 10, color: muted),
+                maxLines: 1, overflow: TextOverflow.ellipsis,
+              )),
             ]),
             const SizedBox(height: 6),
             Text(kost.price, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: AppColors.coral)),
@@ -284,20 +342,26 @@ class _KostGridCard extends StatelessWidget {
               Text(kost.rating, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: textColor)),
               Text(' (${kost.reviews})', style: TextStyle(fontSize: 10, color: muted)),
               const Spacer(),
+              // Detail button
               GestureDetector(
-                onTap: () {
-                  Navigator.push(context, MaterialPageRoute(builder: (_) => KostDetailScreen(kost: kost)));
-                },
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => KostDetailScreen(kost: kost))),
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(color: AppColors.tealBg, borderRadius: BorderRadius.circular(8)),
                   child: const Text('Detail', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.teal)),
                 ),
               ),
+              // Edit button (admin only)
               if (isAdmin) ...[
                 const SizedBox(width: 6),
                 GestureDetector(
-                  onTap: () {},
+                  onTap: () async {
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => AddKostScreen(editKost: kost)),
+                    );
+                    onEdit?.call();
+                  },
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                     decoration: BoxDecoration(color: AppColors.coralBg, borderRadius: BorderRadius.circular(8)),
@@ -313,36 +377,60 @@ class _KostGridCard extends StatelessWidget {
   }
 }
 
+// ─── List Card ────────────────────────────────────────────────────────────────
+
 class _KostListCard extends StatelessWidget {
   final KostData kost;
-  final bool isDark;
-  final bool isAdmin;
+  final bool isDark, isAdmin;
   final Color card, border, muted, textColor;
-  const _KostListCard({required this.kost, required this.isDark, required this.card, required this.border, required this.muted, required this.textColor, required this.isAdmin});
+  final VoidCallback? onEdit;
+
+  const _KostListCard({
+    required this.kost, required this.isDark, required this.card,
+    required this.border, required this.muted, required this.textColor,
+    required this.isAdmin, this.onEdit,
+  });
 
   @override
   Widget build(BuildContext context) {
     final (badgeColor, badgeBg) = _tierColors(kost.tierType);
+
     return Container(
       padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(color: card, borderRadius: BorderRadius.circular(14), border: Border.all(color: border)),
+      decoration: BoxDecoration(
+        color: card,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: border),
+      ),
       child: Row(children: [
-        Container(
-          width: 54, height: 54,
-          decoration: BoxDecoration(
-            color: kost.iconColor.withOpacity(0.1), 
-            borderRadius: BorderRadius.circular(12),
-            image: kost.foto != null ? DecorationImage(image: NetworkImage(kost.foto!), fit: BoxFit.cover) : null,
+        // Foto (rectangular, full cover)
+        ClipRRect(
+          borderRadius: BorderRadius.circular(10),
+          child: SizedBox(
+            width: 54, height: 54,
+            child: kost.foto != null
+                ? Image.network(kost.foto!, fit: BoxFit.cover)
+                : Container(
+                    color: kost.iconColor.withOpacity(0.1),
+                    child: Icon(kost.iconData, size: 26, color: kost.iconColor),
+                  ),
           ),
-          child: kost.foto == null ? Icon(kost.iconData, size: 26, color: kost.iconColor) : null,
         ),
         const SizedBox(width: 12),
+
+        // Info
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(kost.name, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: textColor), maxLines: 1, overflow: TextOverflow.ellipsis),
+          Text(kost.name,
+            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: textColor),
+            maxLines: 1, overflow: TextOverflow.ellipsis,
+          ),
           Row(children: [
             Icon(Icons.location_on_rounded, size: 11, color: muted),
             const SizedBox(width: 2),
-            Expanded(child: Text(kost.location, style: TextStyle(fontSize: 11, color: muted), maxLines: 1, overflow: TextOverflow.ellipsis)),
+            Expanded(child: Text(kost.location,
+              style: TextStyle(fontSize: 11, color: muted),
+              maxLines: 1, overflow: TextOverflow.ellipsis,
+            )),
           ]),
           const SizedBox(height: 4),
           Row(children: [
@@ -354,6 +442,8 @@ class _KostListCard extends StatelessWidget {
             Text(kost.rating, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: textColor)),
           ]),
         ])),
+
+        // Actions
         Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -362,16 +452,26 @@ class _KostListCard extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Row(children: [
+            // Detail
             GestureDetector(
-              onTap: () {
-                Navigator.push(context, MaterialPageRoute(builder: (_) => KostDetailScreen(kost: kost)));
-              },
+              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => KostDetailScreen(kost: kost))),
               child: _actionBtn(Icons.visibility_rounded, AppColors.teal),
             ),
             if (isAdmin) ...[
               const SizedBox(width: 6),
-              _actionBtn(Icons.edit_rounded, muted),
+              // Edit
+              GestureDetector(
+                onTap: () async {
+                  await Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => AddKostScreen(editKost: kost)),
+                  );
+                  onEdit?.call();
+                },
+                child: _actionBtn(Icons.edit_rounded, AppColors.coral),
+              ),
               const SizedBox(width: 6),
+              // Delete (masih kosong, siap diisi)
               _actionBtn(Icons.delete_outline_rounded, muted),
             ],
           ]),
@@ -380,21 +480,28 @@ class _KostListCard extends StatelessWidget {
     );
   }
 
-  Widget _actionBtn(IconData icon, Color muted) => Container(
+  Widget _actionBtn(IconData icon, Color color) => Container(
     width: 30, height: 30,
-    decoration: BoxDecoration(color: isDark ? AppColors.bg2Dark : AppColors.bg2Light, borderRadius: BorderRadius.circular(8)),
-    child: Center(child: Icon(icon, size: 15, color: muted)),
+    decoration: BoxDecoration(
+      color: isDark ? AppColors.bg2Dark : AppColors.bg2Light,
+      borderRadius: BorderRadius.circular(8),
+    ),
+    child: Center(child: Icon(icon, size: 15, color: color)),
   );
 }
 
+// ─── Helper ───────────────────────────────────────────────────────────────────
+
 (Color, Color) _tierColors(String type) {
   switch (type) {
-    case 'teal': return (AppColors.teal, AppColors.tealBg);
+    case 'teal':   return (AppColors.teal, AppColors.tealBg);
     case 'yellow': return (AppColors.yellow, AppColors.yellowBg);
-    case 'blue': return (AppColors.blue, AppColors.blueBg);
-    default: return (AppColors.coral, AppColors.coralBg);
+    case 'blue':   return (AppColors.blue, AppColors.blueBg);
+    default:       return (AppColors.coral, AppColors.coralBg);
   }
 }
+
+// ─── KostData Model ───────────────────────────────────────────────────────────
 
 class KostData {
   final String id;
@@ -405,11 +512,13 @@ class KostData {
   final List<String> tags;
   final String ownerNumber, type, roomClass, description, status;
   final List<String> facilities;
+
   const KostData({
-    required this.id, this.foto, required this.iconData, required this.iconColor, required this.name, 
-    required this.location, required this.price, required this.tier, 
-    required this.tierType, required this.rating, required this.reviews, 
-    required this.tags, required this.ownerNumber, required this.type, 
-    required this.roomClass, required this.description, required this.facilities, required this.status
+    required this.id, this.foto, required this.iconData, required this.iconColor,
+    required this.name, required this.location, required this.price,
+    required this.tier, required this.tierType, required this.rating,
+    required this.reviews, required this.tags, required this.ownerNumber,
+    required this.type, required this.roomClass, required this.description,
+    required this.facilities, required this.status,
   });
 }

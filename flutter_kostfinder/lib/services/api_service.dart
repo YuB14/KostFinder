@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiService {
-  static const String baseUrl = 'http://10.10.6.80:8000/api';
+  static const String baseUrl = 'http://10.10.6.153:8000/api';
 
   // HEADER
   static Future<Map<String, String>> _headers() async {
@@ -29,15 +29,23 @@ class ApiService {
 
   // ================= AUTH =================
 
-  static Future<Map<String, dynamic>> login(String email, String password) async {
-    final res = await http.post(
-      Uri.parse('$baseUrl/auth/login'),
-      headers: {'Accept': 'application/json'},
-      body: {
-        'email': email,
-        'password': password,
-      },
-    ).timeout(const Duration(seconds: 10));
+  static Future<Map<String, dynamic>> login(
+    String email,
+    String password,
+  ) async {
+    final res = await http
+        .post(
+          Uri.parse('$baseUrl/auth/login'),
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+          },
+          body: jsonEncode({
+            'email': email,
+            'password': password,
+          }),
+        )
+        .timeout(const Duration(seconds: 10));
 
     return jsonDecode(res.body);
   }
@@ -121,6 +129,10 @@ class ApiService {
 
   static Future<List<dynamic>> getKosts() async {
     final res = await http.get(Uri.parse('$baseUrl/kost'));
+
+    print("STATUS GET: ${res.statusCode}");
+    print("BODY GET: ${res.body}");
+
     final data = jsonDecode(res.body);
     return data['data'] ?? [];
   }
@@ -140,9 +152,13 @@ class ApiService {
     required String hargaKost,
     required String nomorTelepon,
     required String deskripsi,
-    List<String> fotoPaths = const [],
+    required List<String> fotoPaths,
   }) async {
-    final request = http.MultipartRequest('POST', Uri.parse('$baseUrl/kost'));
+    final request = http.MultipartRequest(
+      'POST',
+      Uri.parse('$baseUrl/kost'),
+    );
+
     request.headers.addAll(await _headers());
 
     request.fields['nama_kost'] = namaKost;
@@ -156,14 +172,171 @@ class ApiService {
     request.fields['deskripsi'] = deskripsi;
 
     if (fotoPaths.isNotEmpty) {
-      request.files.add(await http.MultipartFile.fromPath('foto_kost', fotoPaths.first));
+      request.files.add(
+        await http.MultipartFile.fromPath(
+          'foto_kost',
+          fotoPaths.first,
+        ),
+      );
     }
 
-    final res = await request.send();
-    final body = await res.stream.bytesToString();
+    print("FIELDS POST: ${request.fields}");
+    print("FILES POST: ${request.files.map((e) => e.filename).toList()}");
+
+    final response = await request.send();
+
+    final body = await response.stream.bytesToString();
+
+    print("STATUS POST: ${response.statusCode}");
+    print("BODY POST: $body");
+
     return jsonDecode(body);
   }
 
+  static Future<Map<String, dynamic>> createKost({
+    required String namaKost,
+    required String alamatKost,
+    required String kelas,
+    required String jenisKost,
+    required String status,
+    required String fasilitas,
+    required String hargaKost,
+    required String nomorTelepon,
+    required String deskripsi,
+    required List<String> fotoPaths,
+  }) async {
+    try {
+      final request = http.MultipartRequest(
+        'POST',
+        Uri.parse('$baseUrl/kost'),
+      );
+
+      request.headers.addAll(await _headers());
+
+      request.fields.addAll({
+        'nama_kost': namaKost,
+        'alamat_kost': alamatKost,
+        'kelas': kelas,
+        'jenis_kost': jenisKost,
+        'status': status,
+        'fasilitas': fasilitas,
+        'harga_kost': hargaKost,
+        'nomor_telepon': nomorTelepon,
+        'deskripsi': deskripsi,
+      });
+
+      if (fotoPaths.isNotEmpty) {
+        request.files.add(
+          await http.MultipartFile.fromPath(
+            'foto_kost',
+            fotoPaths.first,
+          ),
+        );
+      }
+
+      final streamedResponse = await request.send().timeout(
+        const Duration(seconds: 20),
+      );
+
+      final responseBody = await streamedResponse.stream.bytesToString();
+
+      print("STATUS POST: ${streamedResponse.statusCode}");
+      print("BODY POST: $responseBody");
+
+      if (responseBody.isEmpty) {
+        return {
+          'success': false,
+          'message': 'Response kosong dari server',
+        };
+      }
+
+      final decoded = jsonDecode(responseBody);
+
+      if (streamedResponse.statusCode >= 200 &&
+          streamedResponse.statusCode < 300) {
+        return decoded;
+      }
+
+      return {
+        'success': false,
+        'message': decoded['message'] ?? 'Gagal menambahkan kost',
+        'status_code': streamedResponse.statusCode,
+      };
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Terjadi error: $e',
+      };
+    }
+  }
+
+  static Future<Map<String, dynamic>> updateKost({
+    required String id,
+    required String namaKost,
+    required String alamatKost,
+    required String kelas,
+    required String jenisKost,
+    required String status,
+    required String fasilitas,
+    required String hargaKost,
+    required String nomorTelepon,
+    required String deskripsi,
+    List<String> fotoPaths = const [],
+  }) async {
+    try {
+      final request = http.MultipartRequest(
+        'POST',
+        Uri.parse('$baseUrl/kost/$id'),
+      );
+
+      request.headers.addAll(await _headers());
+
+      request.fields.addAll({
+        '_method': 'PUT',
+        'nama_kost': namaKost,
+        'alamat_kost': alamatKost,
+        'kelas': kelas,
+        'jenis_kost': jenisKost,
+        'status': status,
+        'fasilitas': fasilitas,
+        'harga_kost': hargaKost,
+        'nomor_telepon': nomorTelepon,
+        'deskripsi': deskripsi,
+      });
+
+      if (fotoPaths.isNotEmpty) {
+        request.files.add(
+          await http.MultipartFile.fromPath(
+            'foto_kost',
+            fotoPaths.first,
+          ),
+        );
+      }
+
+      final res = await request.send().timeout(
+        const Duration(seconds: 20),
+      );
+
+      final body = await res.stream.bytesToString();
+
+      print("STATUS UPDATE: ${res.statusCode}");
+      print("BODY UPDATE: $body");
+
+      if (body.isEmpty) {
+        return {
+          'success': false,
+          'message': 'Response kosong dari server',
+        };
+      }
+
+      return jsonDecode(body);
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Terjadi error: $e',
+      };
+    }
+  }
   // ================= FAVORITE =================
 
   static Future<List<dynamic>> getFavorites() async {
@@ -206,26 +379,34 @@ class ApiService {
     final data = jsonDecode(res.body);
     return data['data'] ?? [];
   }
+static Future<Map<String, dynamic>> createReview({
+  required String userId,
+  required String kostId,
+  required int rating,
+  required String komentar,
+}) async {
+  print("=== CREATE REVIEW DIPANGGIL ===");
 
-  static Future<Map<String, dynamic>> createReview({
-    required String userId,
-    required String kostId,
-    required int rating,
-    required String komentar,
-  }) async {
-    final res = await http.post(
-      Uri.parse('$baseUrl/review'),
-      headers: await _headers(),
-      body: {
-        'user_id': userId,
-        'kost_id': kostId,
-        'rating': rating.toString(),
-        'komentar': komentar,
-      },
-    );
+  final bodyData = {
+    'user_id': userId,
+    'kost_id': kostId,
+    'rating': rating.toString(),
+    'komentar': komentar,
+  };
 
-    return jsonDecode(res.body);
-  }
+  print("REQUEST BODY: $bodyData");
+
+  final res = await http.post(
+    Uri.parse('$baseUrl/review'),
+    headers: await _headers(),
+    body: bodyData,
+  );
+
+  print("POST STATUS: ${res.statusCode}");
+  print("POST BODY: ${res.body}");
+
+  return jsonDecode(res.body);
+}
 
   static Future<Map<String, dynamic>> updateReview(String id, {
     String? status,
