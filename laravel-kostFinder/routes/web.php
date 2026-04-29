@@ -16,20 +16,22 @@ Route::post('/logout',  [AuthController::class, 'logout'])->name('logout')->midd
 
 // ─── Halaman Admin (harus login + role admin) ─────────────────
 Route::middleware(['auth', 'admin'])->group(function () {
-    Route::get('/dashboard', fn() => view('admin.pages.dashboard'))->name('dashboard');
-    Route::get('/user',      fn() => view('admin.pages.user'))->name('user');
-    Route::get('/kost',      fn() => view('admin.pages.kost'))->name('kost');
-    Route::get('/review',    fn() => view('admin.pages.review'))->name('review');
-    Route::get('/favorite',  fn() => view('admin.pages.favorite'))->name('favorite');
+    Route::get('/dashboard',   fn() => view('admin.pages.dashboard'))->name('dashboard');
+    Route::get('/user',        fn() => view('admin.pages.user'))->name('user');
+    Route::get('/kost',        fn() => view('admin.pages.kost'))->name('kost');
+    Route::get('/review',      fn() => view('admin.pages.review'))->name('review');
+    Route::get('/favorite',    fn() => view('admin.pages.favorite'))->name('favorite');
+    Route::get('/api-tester',  fn() => view('admin.pages.api-tester'))->name('api-tester');
 });
 
 // ─── Halaman User (harus login) ──────────────────────────────
 Route::middleware('auth')->prefix('user')->name('user.')->group(function () {
-    Route::get('/dashboard', fn() => view('user.pages.dashboard-user'))->name('dashboard');
-    Route::get('/kost',      fn() => view('user.pages.kost-user'))->name('kost');
-    Route::get('/review',    fn() => view('user.pages.review-user'))->name('review');
-    Route::get('/favorite',  fn() => view('user.pages.favorite-user'))->name('favorite');
-    Route::get('/prediksi',  fn() => view('user.pages.prediksi-user'))->name('prediksi');
+    Route::get('/dashboard',   fn() => view('user.pages.dashboard-user'))->name('dashboard');
+    Route::get('/kost',        fn() => view('user.pages.kost-user'))->name('kost');
+    Route::get('/review',      fn() => view('user.pages.review-user'))->name('review');
+    Route::get('/favorite',    fn() => view('user.pages.favorite-user'))->name('favorite');
+    Route::get('/prediksi',    fn() => view('user.pages.prediksi-user'))->name('prediksi');
+    Route::get('/api-tester',  fn() => view('user.pages.api-tester-user'))->name('api-tester');
 });
 
 // ─── Landing Page ──────────────────────────────────────────────

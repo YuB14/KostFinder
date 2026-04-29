@@ -19,37 +19,31 @@ class DashboardController extends Controller
         $lastMonthStart = $now->copy()->subMonth()->startOfMonth();
         $lastMonthEnd   = $now->copy()->subMonth()->endOfMonth();
 
-        // Query langsung ke database, BUKAN ditarik semua ke memory
         $totalKost = Kost::count();
         $totalUser = User::count();
         $totalFav  = Favorite::count();
         $avgRating = Review::avg('rating') ? round((float) Review::avg('rating'), 2) : 0;
 
-        // ── Bulan ini vs bulan lalu ───────────────────────────────────────
-        $kostThisMonth   = $this->countInRange($totalKost,   $thisMonthStart, $now);
-        $kostLastMonth   = $this->countInRange($totalKost,   $lastMonthStart, $lastMonthEnd);
-
-        $userThisMonth   = $this->countInRange($totalUser,   $thisMonthStart, $now);
-        $userLastMonth   = $this->countInRange($totalUser,   $lastMonthStart, $lastMonthEnd);
-
-        // Filter langsung di level database
         $kostThisMonth = Kost::whereBetween('created_at', [$thisMonthStart, $now])->count();
         $kostLastMonth = Kost::whereBetween('created_at', [$lastMonthStart, $lastMonthEnd])->count();
 
-        $favThisMonth    = $this->countInRange($totalFav,    $thisMonthStart, $now);
-        $favLastMonth    = $this->countInRange($totalFav,    $lastMonthStart, $lastMonthEnd);
+        $userThisMonth = $this->countInRange($totalUser, $thisMonthStart, $now);
+        $userLastMonth = $this->countInRange($totalUser, $lastMonthStart, $lastMonthEnd);
+
+        $favThisMonth  = $this->countInRange($totalFav,  $thisMonthStart, $now);
+        $favLastMonth  = $this->countInRange($totalFav,  $lastMonthStart, $lastMonthEnd);
 
         return response()->json([
             'success' => true,
             'data'    => [
                 'total_kost'    => (int) $totalKost,
-                'kost_change'   => $this->calcChange($kostThisMonth,   $kostLastMonth),
+                'kost_change'   => $this->calcChange($kostThisMonth, $kostLastMonth),
                 'total_user'    => (int) $totalUser,
-                'user_change'   => $this->calcChange($userThisMonth,   $userLastMonth),
+                'user_change'   => $this->calcChange($userThisMonth, $userLastMonth),
                 'avg_rating'    => $avgRating,
                 'rating_change' => $this->calcChange($kostThisMonth, $kostLastMonth),
                 'total_fav'     => (int) $totalFav,
-                'fav_change'    => $this->calcChange($favThisMonth,    $favLastMonth),
+                'fav_change'    => $this->calcChange($favThisMonth,  $favLastMonth),
             ],
         ]);
     }
@@ -85,16 +79,28 @@ class DashboardController extends Controller
     }
 
     // GET /api/dashboard/kelas-distribution
+    // kelas sekarang integer: 1=ekonomi, 2=standar, 3=premium
     public function kelasDistribution()
     {
         $allKosts = Kost::all();
         $total    = $allKosts->count();
         $dist     = [];
 
-        foreach (['Ekonomis', 'Standar', 'Premium'] as $kelas) {
-            $count  = $allKosts->where('kelas', $kelas)->count();
+        $kelasMap = [
+            1 => ['label' => 'Ekonomi',  'kode' => 1],
+            2 => ['label' => 'Standar',  'kode' => 2],
+            3 => ['label' => 'Premium',  'kode' => 3],
+        ];
+
+        foreach ($kelasMap as $kode => $info) {
+            $count  = $allKosts->where('kelas', $kode)->count();
             $persen = $total > 0 ? round(($count / $total) * 100) : 0;
-            $dist[] = ['kelas' => $kelas, 'count' => (int) $count, 'persen' => (int) $persen];
+            $dist[] = [
+                'kelas'  => $info['label'],
+                'kode'   => $kode,
+                'count'  => (int) $count,
+                'persen' => (int) $persen,
+            ];
         }
 
         return response()->json([
@@ -113,86 +119,75 @@ class DashboardController extends Controller
                 $time = $this->parseDate($k->created_at ?? null);
                 if (!$time) return;
                 $activities->push([
-                    'icon'     => '🏘️',
-                    'bg'       => 'coral',
-                    'title'    => 'Kost Baru Ditambahkan',
-                    'desc'     => ($k->nama_kost ?? '-') . ' — ' . ($k->alamat_kost ?? ''),
+                    'icon'      => '🏘️',
+                    'bg'        => 'coral',
+                    'title'     => 'Kost Baru Ditambahkan',
+                    'desc'      => ($k->nama_kost ?? '-') . ' — ' . ($k->alamat_kost ?? ''),
                     'timestamp' => $time->timestamp,
-                    'time_str' => $this->timeAgo($time),
+                    'time_str'  => $this->timeAgo($time),
                 ]);
             });
-        } catch (\Throwable $e) {
-        }
+        } catch (\Throwable $e) {}
 
         try {
             User::latest()->limit(3)->get()->each(function ($u) use (&$activities) {
                 $time = $this->parseDate($u->created_at ?? null);
                 if (!$time) return;
                 $activities->push([
-                    'icon'     => '👤',
-                    'bg'       => 'teal',
-                    'title'    => 'Pengguna Baru Daftar',
-                    'desc'     => ($u->name ?? '-') . ' mendaftar',
+                    'icon'      => '👤',
+                    'bg'        => 'teal',
+                    'title'     => 'Pengguna Baru Daftar',
+                    'desc'      => ($u->name ?? '-') . ' mendaftar',
                     'timestamp' => $time->timestamp,
-                    'time_str' => $this->timeAgo($time),
+                    'time_str'  => $this->timeAgo($time),
                 ]);
             });
-        } catch (\Throwable $e) {
-        }
+        } catch (\Throwable $e) {}
 
         try {
             Review::with('kost')->latest()->limit(3)->get()->each(function ($r) use (&$activities) {
                 $time = $this->parseDate($r->created_at ?? null);
                 if (!$time) return;
                 $activities->push([
-                    'icon'     => '⭐',
-                    'bg'       => 'yellow',
-                    'title'    => 'Ulasan Baru Masuk',
-                    'desc'     => 'Rating ' . ($r->rating ?? '-') . ' — ' . ($r->kost?->nama_kost ?? '-'),
+                    'icon'      => '⭐',
+                    'bg'        => 'yellow',
+                    'title'     => 'Ulasan Baru Masuk',
+                    'desc'      => 'Rating ' . ($r->rating ?? '-') . ' — ' . ($r->kost?->nama_kost ?? '-'),
                     'timestamp' => $time->timestamp,
-                    'time_str' => $this->timeAgo($time),
+                    'time_str'  => $this->timeAgo($time),
                 ]);
             });
-        } catch (\Throwable $e) {
-        }
+        } catch (\Throwable $e) {}
 
         try {
             Favorite::with('kost')->latest()->limit(3)->get()->each(function ($f) use (&$activities) {
                 $time = $this->parseDate($f->created_at ?? null);
                 if (!$time) return;
                 $activities->push([
-                    'icon'     => '❤️',
-                    'bg'       => 'coral',
-                    'title'    => 'Kost Difavoritkan',
-                    'desc'     => ($f->kost?->nama_kost ?? '-') . ' ditambahkan ke favorit',
+                    'icon'      => '❤️',
+                    'bg'        => 'coral',
+                    'title'     => 'Kost Difavoritkan',
+                    'desc'      => ($f->kost?->nama_kost ?? '-') . ' ditambahkan ke favorit',
                     'timestamp' => $time->timestamp,
-                    'time_str' => $this->timeAgo($time),
+                    'time_str'  => $this->timeAgo($time),
                 ]);
             });
-        } catch (\Throwable $e) {
-        }
+        } catch (\Throwable $e) {}
 
-        // Urutkan by timestamp (integer) — tidak ada Carbon object di array
         $sorted = $activities
             ->filter(fn($a) => isset($a['timestamp']))
             ->sortByDesc('timestamp')
             ->take(5)
-            ->map(function ($a) {
-                // Hanya kirim field yang dibutuhkan Blade — tidak ada Carbon object
-                return [
-                    'icon'     => $a['icon'],
-                    'bg'       => $a['bg'],
-                    'title'    => $a['title'],
-                    'desc'     => $a['desc'],
-                    'time_str' => $a['time_str'],
-                ];
-            })
+            ->map(fn($a) => [
+                'icon'     => $a['icon'],
+                'bg'       => $a['bg'],
+                'title'    => $a['title'],
+                'desc'     => $a['desc'],
+                'time_str' => $a['time_str'],
+            ])
             ->values();
 
-        return response()->json([
-            'success' => true,
-            'data'    => $sorted,
-        ]);
+        return response()->json(['success' => true, 'data' => $sorted]);
     }
 
     // GET /api/dashboard/top-kost
@@ -200,7 +195,11 @@ class DashboardController extends Controller
     {
         $kosts = Kost::with('reviews')->get();
 
-        $scored = $kosts->map(function ($k) {
+        $kelasLabels = [1 => 'Ekonomi', 2 => 'Standar', 3 => 'Premium'];
+        // badge class untuk UI: kode kelas → class name
+        $kelasClassMap = [1 => 'avail', 2 => 'pop', 3 => 'prem'];
+
+        $scored = $kosts->map(function ($k) use ($kelasLabels, $kelasClassMap) {
             $id = (string) ($k->_id ?? $k->id ?? '');
 
             $favCount    = Favorite::where('kost_id', $id)->count();
@@ -209,22 +208,24 @@ class DashboardController extends Controller
             $avgRating   = $reviewCount > 0
                 ? round((float) collect($reviews)->avg('rating'), 2)
                 : 0;
-            $score       = ($favCount * 2) + $reviewCount + ($avgRating * 10);
+            $score = ($favCount * 2) + $reviewCount + ($avgRating * 10);
 
             $foto = $k->foto_kost ?? null;
             if ($foto && !str_starts_with((string) $foto, 'http')) {
                 $foto = asset('storage/' . $foto);
             }
 
-            $kelasMap   = ['Ekonomis' => 'avail', 'Standar' => 'pop', 'Premium' => 'prem'];
-            $badgeClass = $kelasMap[$k->kelas ?? ''] ?? 'avail';
+            $kelasInt   = (int) ($k->kelas ?? 1);
+            $kelasLabel = $kelasLabels[$kelasInt] ?? 'Ekonomi';
+            $badgeClass = $kelasClassMap[$kelasInt] ?? 'avail';
 
             return [
                 'id'          => $id,
                 'nama'        => (string) ($k->nama_kost   ?? ''),
                 'alamat'      => (string) ($k->alamat_kost ?? ''),
                 'harga'       => (float)  ($k->harga_kost  ?? 0),
-                'kelas'       => (string) ($k->kelas        ?? ''),
+                'kelas'       => $kelasInt,
+                'kelas_label' => $kelasLabel,
                 'foto'        => $foto,
                 'fav_count'   => (int) $favCount,
                 'avg_rating'  => $avgRating,
@@ -239,12 +240,8 @@ class DashboardController extends Controller
         ]);
     }
 
-    // ── Helpers ───────────────────────────────────────────────────────────
+    // ── Helpers ─────────────────────────────────────────────────────────────
 
-    /**
-     * Hitung item dalam collection yang created_at-nya antara $from dan $to.
-     * Semua filtering di PHP — tidak pakai query MongoDB.
-     */
     private function countInRange($collection, Carbon $from, Carbon $to): int
     {
         return $collection->filter(function ($item) use ($from, $to) {
@@ -253,11 +250,6 @@ class DashboardController extends Controller
         })->count();
     }
 
-    /**
-     * Parse tanggal ke Carbon tanpa UTCDateTime.
-     * Laravel MongoDB driver sudah auto-cast tanggal ke Carbon via $casts,
-     * tapi jika tidak terkonfigurasi, fallback ke Carbon::parse().
-     */
     private function parseDate($value): ?Carbon
     {
         if (is_null($value) || $value === '') return null;
@@ -270,9 +262,6 @@ class DashboardController extends Controller
         }
     }
 
-    /**
-     * Format Carbon ke string waktu relatif.
-     */
     private function timeAgo(Carbon $carbon): string
     {
         $now  = Carbon::now();
@@ -287,9 +276,6 @@ class DashboardController extends Controller
         return $carbon->locale('id')->isoFormat('D MMM YYYY');
     }
 
-    /**
-     * Hitung persentase perubahan.
-     */
     private function calcChange(int $current, int $previous): float
     {
         if ($previous === 0) return $current > 0 ? 100.0 : 0.0;

@@ -1,7 +1,8 @@
 <aside class="sidebar" id="sidebar">
     <div class="sidebar-logo">
         <div class="logo-icon">🏠</div>
-        <div class="wordmark">Kost<span>Finder</span></div>
+        <div class="wordmark">Kost<span>Finder</span><div style="font-size:9px;font-weight:400;color:var(--muted);margin-top:1px;white-space:nowrap">Platform Kost Terpercaya</div>
+        </div>
     </div>
 
     <nav class="sidebar-nav">
@@ -35,6 +36,14 @@
             <span class="nav-icon">❤️</span>
             <span class="nav-label">Favorit</span>
             <span class="nav-tooltip">Favorit</span>
+        </a>
+
+        <div class="nav-section-label">Developer</div>
+
+        <a href="{{ route('api-tester') }}" class="nav-item {{ request()->routeIs('api-tester*') ? 'active' : '' }}">
+            <span class="nav-icon">📡</span>
+            <span class="nav-label">API / JSON</span>
+            <span class="nav-tooltip">API / JSON</span>
         </a>
     </nav>
 

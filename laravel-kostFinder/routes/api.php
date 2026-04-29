@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\KostController;
 use App\Http\Controllers\Api\ReviewController;
 use App\Http\Controllers\Api\FavoriteController;
 use App\Http\Controllers\Api\DashboardController;
+use App\Http\Controllers\Api\WilayahController;
 use App\Http\Controllers\Api\User\UserApiController;
 
 Route::prefix("auth")->group(function () {
@@ -27,7 +28,11 @@ Route::prefix('dashboard')->group(function () {
 Route::get('/users/stats', [UserController::class, 'stats']);
 Route::apiResource('users', UserController::class);
 
+Route::post('kost/import-csv', [KostController::class, 'importCsv']);
 Route::apiResource('kost', KostController::class);
+
+// Wilayah — public (dibutuhkan oleh form admin & Flask)
+Route::apiResource('wilayah', WilayahController::class);
 
 Route::get('review/stats', [ReviewController::class, 'stats']);
 Route::apiResource('review', ReviewController::class);
