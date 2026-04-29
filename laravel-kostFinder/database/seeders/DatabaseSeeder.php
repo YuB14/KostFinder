@@ -15,11 +15,10 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
+        // Seed kode lokasi 1-10
+        $this->call(LokasiSeeder::class);
 
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-        ]);
+        // Seed seluruh kabupaten/kota Indonesia ke koleksi wilayah
+        $this->call(WilayahSeeder::class);
     }
 }

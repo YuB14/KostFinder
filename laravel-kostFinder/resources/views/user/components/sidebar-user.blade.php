@@ -1,6 +1,4 @@
 <aside class="sidebar" id="sidebar">
-
-    {{-- Logo — tinggi sama dengan topbar --}}
     <div class="sidebar-logo">
         <div class="logo-icon">🏠</div>
         <div class="wordmark">Kost<span>Finder</span>
@@ -9,7 +7,7 @@
     </div>
 
     <nav class="sidebar-nav">
-        <div class="nav-section-label">Menu</div>
+        <div class="nav-section-label">Menu Utama</div>
 
         <a href="{{ route('user.dashboard') }}" class="nav-item {{ request()->routeIs('user.dashboard') ? 'active' : '' }}">
             <span class="nav-icon">📊</span>
@@ -40,20 +38,34 @@
             <span class="nav-label">Prediksi Kost</span>
             <span class="nav-tooltip">Prediksi Kost</span>
         </a>
+
+        <div class="nav-section-label">Developer</div>
+
+        <a href="{{ route('user.api-tester') }}" class="nav-item {{ request()->routeIs('user.api-tester') ? 'active' : '' }}">
+            <span class="nav-icon">📡</span>
+            <span class="nav-label">API / JSON</span>
+            <span class="nav-tooltip">API / JSON</span>
+        </a>
     </nav>
 
-    {{-- Footer: info user + logout --}}
+    {{-- ─── FOOTER: info user + tombol logout ─── --}}
     <div class="sidebar-footer">
         <div class="user-chip">
-            @php
-                $foto    = Auth::user()->profile_picture ?? null;
-                $fotoUrl = $foto ? (str_starts_with($foto, 'http') ? $foto : asset('storage/' . $foto)) : null;
-                $inisial = strtoupper(substr(Auth::user()->name ?? 'U', 0, 1));
-            @endphp
 
+            {{-- Avatar: foto profil jika ada, inisial jika tidak --}}
             <div class="user-avatar">
+                @php
+                    // Field di DB adalah "profile_picture"
+                    $foto = Auth::user()->profile_picture ?? null;
+                    $fotoUrl = $foto
+                        ? (str_starts_with($foto, 'http') ? $foto : asset('storage/' . $foto))
+                        : null;
+                    $inisial = strtoupper(substr(Auth::user()->name ?? 'U', 0, 1));
+                @endphp
+
                 @if($fotoUrl)
-                    <img src="{{ $fotoUrl }}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" alt="{{ Auth::user()->name }}">
+                    <img src="{{ $fotoUrl }}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;"
+                        alt="{{ Auth::user()->name }}">
                 @else
                     {{ $inisial }}
                 @endif
@@ -61,9 +73,10 @@
 
             <div class="user-info">
                 <strong>{{ Auth::user()->name }}</strong>
-                <span>Pengguna</span>
+                <span>{{ ucfirst(Auth::user()->role ?? 'User') }}</span>
             </div>
 
+            {{-- Tombol logout — buka modal konfirmasi --}}
             <button class="logout-btn" onclick="showLogoutModal()" title="Keluar">⏻</button>
         </div>
     </div>
@@ -73,3 +86,15 @@
 <form id="logout-form" action="{{ route('logout') }}" method="POST" style="display:none">
     @csrf
 </form>
+
+<script>
+    function showLogoutModal() {
+        document.getElementById('logout-modal').style.display = 'flex';
+    }
+    function hideLogoutModal() {
+        document.getElementById('logout-modal').style.display = 'none';
+    }
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Escape') hideLogoutModal();
+    });
+</script>

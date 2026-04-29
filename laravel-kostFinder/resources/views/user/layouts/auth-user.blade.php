@@ -256,8 +256,8 @@
             cursor: pointer;
         }
 
-        /* ── MAIN AREA ──────────────────────────────── */
-        .u-main {
+        /* ── MAIN AREA ──────────────────────────── */
+        .u-main, .main {
             flex: 1;
             margin-left: var(--sidebar-w);
             display: flex;
@@ -267,7 +267,16 @@
             transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        .u-topbar {
+        /* ── CONTENT AREA ──────────────────────────── */
+        .u-content, .content {
+            flex: 1;
+            padding: 28px 32px;
+            max-width: 1200px;
+            width: 100%;
+            margin: 0 auto;
+        }
+
+        .topbar {
             height: var(--topbar-h);
             background: var(--card);
             border-bottom: 1px solid var(--border);
@@ -280,6 +289,26 @@
             z-index: 100;
             transition: background 0.35s;
         }
+        /* Notification & Profile dropdown */
+        .topbar-dropdown{position:absolute;top:calc(100% + 8px);right:-8px;width:360px;background:var(--card);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow-lg);z-index:8000;display:none;overflow:hidden;animation:fadeUp .2s ease}
+        .topbar-dropdown.open{display:block}
+        .topbar-dropdown-header{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid var(--border)}
+        .topbar-dropdown-body{max-height:380px;overflow-y:auto}
+        .notif-item{display:flex;gap:12px;padding:13px 18px;border-bottom:1px solid var(--border);transition:background .15s}
+        .notif-item:last-child{border-bottom:none}
+        .notif-item:hover{background:var(--bg)}
+        .notif-icon-wrap{width:38px;height:38px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
+        .notif-icon-wrap.coral{background:var(--coral-bg)}
+        .notif-icon-wrap.teal{background:var(--teal-bg)}
+        .notif-icon-wrap.yellow{background:var(--yellow-bg)}
+        .notif-icon-wrap.blue{background:rgba(66,153,225,.1)}
+        .notif-content{flex:1;min-width:0}
+        .notif-title{font-size:13px;font-weight:600;color:var(--text);line-height:1.3}
+        .notif-desc{font-size:11px;color:var(--muted);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+        .notif-time{font-size:11px;color:var(--muted);margin-top:3px}
+        @keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+        /* Notification dot */
+        .notif-dot{position:absolute;top:6px;right:6px;width:7px;height:7px;border-radius:50%;background:var(--coral);border:2px solid var(--card);pointer-events:none}
         .topbar-title {
             font-family: 'Syne', sans-serif;
             font-size: 18px;
@@ -303,13 +332,6 @@
         }
         .icon-btn:hover { border-color: rgba(26,42,58,.2); box-shadow: var(--shadow); }
 
-        .u-content {
-            flex: 1;
-            padding: 28px 32px;
-            max-width: 1200px;
-            width: 100%;
-            margin: 0 auto;
-        }
 
         /* Collapsed sidebar */
         body.collapsed .sidebar { width: var(--sidebar-col); }
@@ -319,6 +341,7 @@
         body.collapsed .user-info { opacity: 0; max-width: 0; }
         body.collapsed #collapse-btn { transform: rotate(180deg); }
         body.collapsed .u-main { margin-left: var(--sidebar-col); }
+        body.collapsed .main { margin-left: var(--sidebar-col); }
         body.collapsed .nav-item:hover .nav-tooltip { opacity: 1; }
 
         /* ── KOMPONEN UMUM ──────────────────────────── */
@@ -1055,13 +1078,13 @@
         @media (max-width: 860px) {
             .sidebar { transform: translateX(-100%); }
             .sidebar.open { transform: translateX(0); }
-            .u-main { margin-left: 0; }
+            .u-main, .main { margin-left: 0; }
             .sidebar-toggle { display: flex; }
             .collapse-btn { display: none; }
         }
 
         @media (max-width: 768px) {
-            .u-content { padding: 16px; }
+            .u-content, .content { padding: 16px; }
             .mform-row { grid-template-columns: 1fr; }
             .kost-grid-user { grid-template-columns: 1fr 1fr; }
         }
@@ -1264,6 +1287,17 @@
                     d.classList.remove('open');
                     d.closest('.csel-wrap')?.querySelector('.csel-trigger')?.classList.remove('open');
                 });
+            }
+        });
+
+        // Tanggal di topbar
+        document.addEventListener('DOMContentLoaded', () => {
+            const el = document.getElementById('topbar-date');
+            if (el) {
+                el.textContent = new Date().toLocaleDateString('id-ID', {
+                    weekday: 'short', day: 'numeric', month: 'short', year: 'numeric'
+                });
+                el.style.display = '';
             }
         });
     </script>
