@@ -38,7 +38,7 @@ class KostFinderApp extends StatelessWidget {
         ),
         scaffoldBackgroundColor: const Color(0xFFF5F7FA),
       ),
-      home: const AuthWrapper(),
+      home: const MainScreen(), // TEMP: bypass login untuk testing
     );
   }
 }
