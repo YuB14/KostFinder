@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../Admin/screens/main_screen.dart'; // TEMP: bypass login
+import 'screens/login_screen.dart';
 import 'theme/app_theme.dart';
 
 void main() {
@@ -32,7 +32,7 @@ class KostFinderApp extends StatelessWidget {
           theme: AppTheme.light,
           darkTheme: AppTheme.dark,
           themeMode: currentMode,
-          home: const MainScreen(), // TEMP: bypass login untuk testing
+          home: const LoginScreen(),
         );
       },
     );

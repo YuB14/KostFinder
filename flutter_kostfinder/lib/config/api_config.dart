@@ -2,7 +2,7 @@ class ApiConfig {
   // Ganti dengan IP server Laravel kamu
   // Emulator Android: 10.0.2.2
   // Device fisik: IP komputer kamu, contoh: 192.168.1.5
-  static const String baseUrl = 'http://10.0.2.2:8000';
+  static const String baseUrl = 'http://192.168.1.5:8000';
   static const String apiUrl = '$baseUrl/api';
 
   // Auth endpoints
