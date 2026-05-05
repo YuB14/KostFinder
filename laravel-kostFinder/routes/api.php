@@ -14,6 +14,7 @@ Route::prefix("auth")->group(function () {
 
     Route::post("/register", [AuthController::class, "register"]);
     Route::post("/login", [AuthController::class, "login"]);
+    Route::post("/logout", [AuthController::class, "apiLogout"]);
 
 });
 
@@ -40,7 +41,7 @@ Route::apiResource('review', ReviewController::class);
 Route::get('favorite/stats', [FavoriteController::class, 'stats']);
 Route::apiResource('favorite', FavoriteController::class);
 
-Route::prefix('user')->middleware(['web', 'auth'])->group(function () {
+Route::prefix('user')->middleware('api.token')->group(function () {
 
     // Statistik ringkasan
     Route::get('stats',                    [UserApiController::class, 'stats']);

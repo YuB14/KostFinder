@@ -22,10 +22,10 @@ class FavoriteResource extends JsonResource
         $kostId   = (string) ($kost?->_id ?? $kost?->id ?? '');
         $favCount = $kostId ? Favorite::where('kost_id', $kostId)->count() : 0;
 
-        // Status pill
-        $status   = (string) ($kost?->status ?? '');
-        $pillMap  = ['Aktif' => 'green', 'Review' => 'blue', 'Nonaktif' => 'muted'];
-        $pillClass = $pillMap[$status] ?? 'green';
+        // Status pill — gunakan status integer dari Kost model
+        $statusInt = (int) ($kost?->status ?? 1);
+        $statusStr = \App\Models\Kost::statusLabel($statusInt);
+        $pillClass = $statusInt === 0 ? 'muted' : 'green';
 
         return [
             'id'             => $id,
@@ -34,8 +34,8 @@ class FavoriteResource extends JsonResource
             'kost_nama'      => (string) ($kost?->nama_kost   ?? ''),
             'kost_alamat'    => (string) ($kost?->alamat_kost ?? ''),
             'kost_harga'     => (float)  ($kost?->harga_kost  ?? 0),
-            'kost_kelas'     => (string) ($kost?->kelas        ?? ''),
-            'kost_status'    => $status,
+            'kost_kelas'     => (string) (\App\Models\Kost::kelasLabel()[(int)($kost?->kelas ?? 1)] ?? 'Ekonomi'),
+            'kost_status'    => $statusStr,
             'kost_foto'      => $foto,
             'kost_fasilitas' => (string) ($kost?->fasilitas   ?? ''),
             'pill_class'     => $pillClass,

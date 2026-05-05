@@ -27,11 +27,16 @@ class DashboardController extends Controller
         $kostThisMonth = Kost::whereBetween('created_at', [$thisMonthStart, $now])->count();
         $kostLastMonth = Kost::whereBetween('created_at', [$lastMonthStart, $lastMonthEnd])->count();
 
-        $userThisMonth = $this->countInRange($totalUser, $thisMonthStart, $now);
-        $userLastMonth = $this->countInRange($totalUser, $lastMonthStart, $lastMonthEnd);
+        // Query User & Favorite with proper date filtering
+        $userThisMonth = User::whereBetween('created_at', [$thisMonthStart, $now])->count();
+        $userLastMonth = User::whereBetween('created_at', [$lastMonthStart, $lastMonthEnd])->count();
 
-        $favThisMonth  = $this->countInRange($totalFav,  $thisMonthStart, $now);
-        $favLastMonth  = $this->countInRange($totalFav,  $lastMonthStart, $lastMonthEnd);
+        $favThisMonth  = Favorite::whereBetween('created_at', [$thisMonthStart, $now])->count();
+        $favLastMonth  = Favorite::whereBetween('created_at', [$lastMonthStart, $lastMonthEnd])->count();
+
+        // Review-based change for rating trend
+        $reviewThisMonth = Review::whereBetween('created_at', [$thisMonthStart, $now])->count();
+        $reviewLastMonth = Review::whereBetween('created_at', [$lastMonthStart, $lastMonthEnd])->count();
 
         return response()->json([
             'success' => true,
@@ -41,7 +46,7 @@ class DashboardController extends Controller
                 'total_user'    => (int) $totalUser,
                 'user_change'   => $this->calcChange($userThisMonth, $userLastMonth),
                 'avg_rating'    => $avgRating,
-                'rating_change' => $this->calcChange($kostThisMonth, $kostLastMonth),
+                'rating_change' => $this->calcChange($reviewThisMonth, $reviewLastMonth),
                 'total_fav'     => (int) $totalFav,
                 'fav_change'    => $this->calcChange($favThisMonth,  $favLastMonth),
             ],

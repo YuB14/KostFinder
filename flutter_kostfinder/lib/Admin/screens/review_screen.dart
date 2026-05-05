@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
-import '../widgets/shared_widgets.dart';
+import '../../widgets/shared_widgets.dart';
 import '../services/api_service.dart';
-import '../widgets/shared_app_bar.dart';
+import '../../widgets/shared_app_bar.dart';
 
 class ReviewScreen extends StatefulWidget {
   const ReviewScreen({super.key});
@@ -554,8 +554,9 @@ class _ReviewScreenState extends State<ReviewScreen> {
                                 ? AppColors.cardDark
                                 : AppColors.cardLight,
                             onChanged: (v) {
-                              if (v != null)
+                              if (v != null) {
                                 setState(() => _activeFilter = v);
+                              }
                             },
                             items: ['Semua', 'Disetujui', 'Menunggu', 'Ditolak']
                                 .map((String value) {
@@ -823,7 +824,7 @@ class _ReviewCard extends StatelessWidget {
     if (usePhoto) {
       return ClipOval(
         child: Image.network(
-          photoUrl!,
+          photoUrl,
           width: 38,
           height: 38,
           fit: BoxFit.cover,

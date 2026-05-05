@@ -51,7 +51,7 @@ class KostController extends Controller
             'harga_kost'         => 'required|numeric',
             'luas_kamar'         => 'nullable|numeric|min:0',
             'tipe_kos'           => 'nullable|integer|in:1,2,3',
-            'kelas'              => 'required|integer|in:1,2,3',
+            'kelas'              => 'nullable|integer|in:1,2,3',
             'status'             => 'required|integer|min:0',
             'kode_lokasi'        => 'nullable|integer|min:1|max:10',
             'wilayah_id'         => 'nullable|string',
@@ -77,14 +77,24 @@ class KostController extends Controller
             if ($w) $kodeLokas = (int) $w->kode_lokasi;
         }
 
+        // Auto-compute kelas from harga
+        $harga = (float) $request->harga_kost;
+        if ($harga > 1500000) {
+            $kelas = 3; // Premium
+        } elseif ($harga >= 1000000) {
+            $kelas = 2; // Standar
+        } else {
+            $kelas = 1; // Ekonomi
+        }
+
         $kost = Kost::create([
             'nama_kost'          => $request->nama_kost,
             'foto_kost'          => $fotoPath,
             'alamat_kost'        => $request->alamat_kost,
-            'harga_kost'         => (float) $request->harga_kost,
+            'harga_kost'         => $harga,
             'luas_kamar'         => (float) ($request->luas_kamar ?? 0),
             'tipe_kos'           => (int)   ($request->tipe_kos   ?? 3),
-            'kelas'              => (int)   $request->kelas,
+            'kelas'              => $kelas,
             'status'             => (int)   $request->status,
             'kode_lokasi'        => $kodeLokas,
             'wilayah_id'         => $request->wilayah_id ?? null,
@@ -126,7 +136,7 @@ class KostController extends Controller
             'harga_kost'         => 'sometimes|required|numeric',
             'luas_kamar'         => 'nullable|numeric|min:0',
             'tipe_kos'           => 'nullable|integer|in:1,2,3',
-            'kelas'              => 'sometimes|required|integer|in:1,2,3',
+            'kelas'              => 'nullable|integer|in:1,2,3',
             'status'             => 'sometimes|required|integer|min:0',
             'kode_lokasi'        => 'nullable|integer|min:1|max:10',
             'wilayah_id'         => 'nullable|string',
@@ -147,8 +157,8 @@ class KostController extends Controller
             $kost->foto_kost = $request->file('foto_kost')->store('kosts', 'public');
         }
 
-        // Update field numerik
-        $numericFields = ['harga_kost', 'luas_kamar', 'tipe_kos', 'kelas', 'status',
+        // Update field numerik (kelas excluded — auto-computed below)
+        $numericFields = ['harga_kost', 'luas_kamar', 'tipe_kos', 'status',
                           'kode_lokasi', 'listrik', 'ac', 'kamar_mandi_dalam',
                           'parkir_motor', 'laundry', 'wifi'];
         foreach ($numericFields as $field) {
@@ -156,6 +166,18 @@ class KostController extends Controller
                 $kost->$field = ($field === 'harga_kost' || $field === 'luas_kamar')
                     ? (float) $request->$field
                     : (int)   $request->$field;
+            }
+        }
+
+        // Auto-compute kelas from harga (always sync)
+        if ($request->has('harga_kost')) {
+            $harga = (float) $request->harga_kost;
+            if ($harga > 1500000) {
+                $kost->kelas = 3; // Premium
+            } elseif ($harga >= 1000000) {
+                $kost->kelas = 2; // Standar
+            } else {
+                $kost->kelas = 1; // Ekonomi
             }
         }
 

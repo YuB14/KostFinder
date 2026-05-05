@@ -34,8 +34,25 @@ Route::middleware('auth')->prefix('user')->name('user.')->group(function () {
     Route::get('/api-tester',  fn() => view('user.pages.api-tester-user'))->name('api-tester');
 });
 
+// ─── Web API untuk halaman User (session-based auth) ─────────
+// Blade view user menggunakan fetch() ke endpoint ini.
+// Karena web route sudah punya session middleware,
+// Auth::check() dan Auth::id() berfungsi dengan benar.
+Route::middleware('auth')->prefix('w/user')->group(function () {
+    Route::get('stats',                    [\App\Http\Controllers\Api\User\UserApiController::class, 'stats']);
+    Route::get('kost',                     [\App\Http\Controllers\Api\User\UserApiController::class, 'kostIndex']);
+    Route::get('kost/{id}/reviews',        [\App\Http\Controllers\Api\User\UserApiController::class, 'kostReviews']);
+    Route::get('review',                   [\App\Http\Controllers\Api\User\UserApiController::class, 'reviewIndex']);
+    Route::post('review',                  [\App\Http\Controllers\Api\User\UserApiController::class, 'reviewStore']);
+    Route::put('review/{id}',              [\App\Http\Controllers\Api\User\UserApiController::class, 'reviewUpdate']);
+    Route::get('favorite',                 [\App\Http\Controllers\Api\User\UserApiController::class, 'favoriteIndex']);
+    Route::post('favorite',                [\App\Http\Controllers\Api\User\UserApiController::class, 'favoriteStore']);
+    Route::delete('favorite/{id}',         [\App\Http\Controllers\Api\User\UserApiController::class, 'favoriteDestroy']);
+    Route::get('prediksi/stats',           [\App\Http\Controllers\Api\User\UserApiController::class, 'prediksiStats']);
+    Route::post('prediksi',                [\App\Http\Controllers\Api\User\UserApiController::class, 'prediksi']);
+});
+
 // ─── Landing Page ──────────────────────────────────────────────
 Route::get('/', function () {
     return view('index');
 });
-

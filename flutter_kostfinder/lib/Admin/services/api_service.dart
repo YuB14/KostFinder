@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiService {
-  static const String baseUrl = 'http://10.10.184.220:8000/api';
+  static const String baseUrl = 'http://10.10.174.186:8000/api';
 
   // HEADER
   static Future<Map<String, String>> _headers() async {

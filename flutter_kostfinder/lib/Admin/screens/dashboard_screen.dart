@@ -1,14 +1,13 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 import '../theme/app_theme.dart';
-import '../widgets/shared_widgets.dart';
+import '../../widgets/shared_widgets.dart';
 import '../main.dart';
 import '../services/api_service.dart';
 import 'login_screen.dart';
 import 'kost_screen.dart';
 import 'user_screen.dart';
-import '../widgets/shared_app_bar.dart';
+import '../../widgets/shared_app_bar.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -216,8 +215,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         else if (bgStr == 'blue') { bgCol = AppColors.blueBg; iconCol = AppColors.blue; }
                         
                         final iconStr = a['icon']?.toString() ?? '';
-                        if (iconStr == '🏘️') icn = Icons.home_work_rounded;
-                        else if (iconStr == '👤') icn = Icons.person_add_rounded;
+                        if (iconStr == '🏘️') {
+                          icn = Icons.home_work_rounded;
+                        } else if (iconStr == '👤') icn = Icons.person_add_rounded;
                         else if (iconStr == '⭐') icn = Icons.star_rounded;
                         else if (iconStr == '❤️') icn = Icons.favorite_rounded;
 
@@ -364,7 +364,7 @@ class _DynamicPopularKostRow extends StatelessWidget {
   final bool isDark;
   final Color card, border, muted, textColor;
 
-  const _DynamicPopularKostRow({super.key, required this.kost, required this.isDark, required this.card, required this.border, required this.muted, required this.textColor});
+  const _DynamicPopularKostRow({required this.kost, required this.isDark, required this.card, required this.border, required this.muted, required this.textColor});
 
   @override
   Widget build(BuildContext context) {

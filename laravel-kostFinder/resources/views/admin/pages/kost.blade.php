@@ -404,20 +404,7 @@ document.addEventListener('DOMContentLoaded', async ()=>{
     document.getElementById('search-kost').addEventListener('input',e=>{kostSearchQuery=e.target.value;applyKostFilter();});
 });
 
-async function loadWilayahOptions(){
-    try{
-        const res=await fetch('/api/wilayah');
-        const d=await res.json();
-        if(!d.success)return;
-        window.K_WILAYAH_OPTS = d.data;
-        ['kadd','kedit'].forEach(prefix=>{
-            const listEl = document.getElementById(prefix+'-wilayah-list');
-            if(listEl) {
-                listEl.innerHTML = d.data.map(w=>`<div class="csel-opt" data-val="${w.id}" onclick="pickWilayah('${prefix}', '${w.id}', '${w.nama_wilayah}', '${w.kode_lokasi}')">${w.nama_wilayah}</div>`).join('');
-            }
-        });
-    }catch(e){console.warn('loadWilayah error',e);}
-}
+/* loadWilayahOptions defined at bottom of script */
 
 /* LOAD — field dari controller: id,nama_kost,foto_kost,alamat_kost,kelas,
    status,fasilitas,harga_kost,nomor_telepon,avg_rating,reviews_count */
@@ -789,9 +776,9 @@ function getRawHarga(id){
 /* KELAS OTOMATIS berdasarkan harga */
 function getKelasByHarga(harga) {
     const h = parseInt(harga) || 0;
-    if (h >= 2500000) return 3;
-    if (h >= 1000000) return 2;
-    return 1;
+    if (h > 1500000) return 3;  // Premium
+    if (h >= 1000000) return 2; // Standar
+    return 1;                   // Ekonomi
 }
 
 function setKelasDisplay(prefix, kelasInt) {
@@ -817,43 +804,7 @@ if(typeof getCselVal==='undefined'){window.getCselVal=id=>{const w=document.getE
 if(typeof setCselVal==='undefined'){window.setCselVal=(id,val)=>{const w=document.getElementById(id);if(!w)return;const opt=[...w.querySelectorAll('.csel-opt')].find(o=>o.dataset.val===val||o.textContent.trim().includes(val));if(opt){w.querySelector('.csel-val').textContent=opt.textContent.trim();w.dataset.value=opt.dataset.val;w.querySelectorAll('.csel-opt').forEach(o=>o.classList.remove('active'));opt.classList.add('active');}};
 }
 
-function toggleCselSearch(id) {
-    const w = document.getElementById(id);
-    if (!w) return;
-    const drop = w.querySelector('.csel-dropdown');
-    if (!drop) return;
-    const isBlock = drop.style.display === 'block';
-    document.querySelectorAll('.csel-dropdown').forEach(d => d.style.display = 'none');
-    if (!isBlock) {
-        drop.style.display = 'block';
-        const input = drop.querySelector('input');
-        if(input) { input.value = ''; input.dispatchEvent(new Event('input')); input.focus(); }
-    }
-}
-
-function pickWilayah(prefix, id, nama, kodeLokasi) {
-    document.getElementById(prefix+'-wilayah-id').value = id;
-    const csel = document.getElementById('csel-'+prefix+'-wilayah');
-    if(csel) {
-        const valSpan = csel.querySelector('.csel-val');
-        if(valSpan) valSpan.textContent = nama;
-        const drop = csel.querySelector('.csel-dropdown');
-        if(drop) drop.style.display = 'none';
-    }
-    if(kodeLokasi) setCselVal('csel-'+prefix+'-kodelok', String(kodeLokasi));
-}
-
-function filterWilayah(prefix) {
-    const input = document.getElementById(prefix+'-wilayah-search');
-    if (!input) return;
-    const q = input.value.toLowerCase();
-    const list = document.getElementById(prefix+'-wilayah-list');
-    if (!list) return;
-    const opts = list.querySelectorAll('.csel-opt');
-    opts.forEach(opt => {
-        opt.style.display = opt.textContent.toLowerCase().includes(q) ? 'block' : 'none';
-    });
-}
+/* toggleCselSearch, filterWilayah, pickWilayah — defined below (single source of truth) */
 
 /* ─── CSV IMPORT ─── */
 function openCsvImport(){
@@ -934,8 +885,8 @@ function filterWilayah(prefix) {
     const q = (document.getElementById(prefix + '-wilayah-search').value || '').toLowerCase();
     const list = document.getElementById(prefix + '-wilayah-list');
     const opts = K_WILAYAH_OPTS || [];
-    const filtered = opts.filter(o => o.nama.toLowerCase().includes(q));
-    list.innerHTML = filtered.map(o => `<div class="csel-opt" style="padding:8px 12px;font-size:13px;cursor:pointer;border-bottom:1px solid var(--border)" onclick="pickWilayah('${prefix}', '${o.id}', this.textContent)">${o.nama}</div>`).join('');
+    const filtered = opts.filter(o => o.nama_wilayah.toLowerCase().includes(q));
+    list.innerHTML = filtered.map(o => `<div class="csel-opt" style="padding:8px 12px;font-size:13px;cursor:pointer;border-bottom:1px solid var(--border)" onclick="pickWilayah('${prefix}', '${o.id}', this.textContent)">${o.nama_wilayah}</div>`).join('');
     if (!filtered.length) list.innerHTML = '<div style="padding:8px 12px;font-size:12px;color:var(--muted);text-align:center">Tidak ditemukan</div>';
 }
 function pickWilayah(prefix, id, nama) {
@@ -956,7 +907,7 @@ async function loadWilayahOptions() {
         const res = await fetch('/api/wilayah');
         const d = await res.json();
         if (!d.success) return;
-        K_WILAYAH_OPTS = d.data.map(w => ({ id: w.id, kode: w.kode_lokasi, nama: w.nama_wilayah }));
+        K_WILAYAH_OPTS = d.data.map(w => ({ id: w.id, kode_lokasi: w.kode_lokasi, nama_wilayah: w.nama_wilayah }));
     } catch(e) { console.warn('loadWilayah error', e); }
 }
 

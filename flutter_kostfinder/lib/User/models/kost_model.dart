@@ -1,0 +1,168 @@
+/// KostModel — sesuai schema MongoDB & KostResource Laravel
+/// tipe_kos  : 1=Pria, 2=Wanita, 3=Campur
+/// kelas     : 1=Ekonomi, 2=Standar, 3=Premium
+/// status    : 0=Penuh, 1=Tersedia, 2+=sisa kamar
+/// kode_lokasi: 1–10
+/// fasilitas : listrik, ac, kamar_mandi_dalam, parkir_motor, laundry, wifi (0/1)
+class KostModel {
+  final String id;
+  final String namaKost;
+  final String? fotoKost;
+  final String alamatKost;
+  final double hargaKost;
+  final double luasKamar;
+
+  // Integer mappings
+  final int tipeKos;
+  final int kelas;
+  final int status;
+  final int kodeLokasi;
+  final String wilayahId;
+  final String? wilayahNama;
+
+  // Fasilitas binary (0/1)
+  final int listrik;
+  final int ac;
+  final int kamarMandiDalam;
+  final int parkirMotor;
+  final int laundry;
+  final int wifi;
+
+  // Opsional
+  final String? nomorTelepon;
+  final String? deskripsi;
+
+  // Rating
+  final double avgRating;
+  final int reviewsCount;
+
+  // Label dari API
+  final String? kelasLabel;
+  final String? tipeKosLabel;
+  final String? statusLabel;
+  final String? lokasiLabel;
+
+  KostModel({
+    required this.id,
+    required this.namaKost,
+    this.fotoKost,
+    required this.alamatKost,
+    required this.hargaKost,
+    this.luasKamar = 0,
+    this.tipeKos = 3,
+    this.kelas = 1,
+    this.status = 1,
+    this.kodeLokasi = 1,
+    this.wilayahId = '',
+    this.wilayahNama,
+    this.listrik = 1,
+    this.ac = 0,
+    this.kamarMandiDalam = 0,
+    this.parkirMotor = 0,
+    this.laundry = 0,
+    this.wifi = 0,
+    this.nomorTelepon,
+    this.deskripsi,
+    this.avgRating = 0,
+    this.reviewsCount = 0,
+    this.kelasLabel,
+    this.tipeKosLabel,
+    this.statusLabel,
+    this.lokasiLabel,
+  });
+
+  factory KostModel.fromJson(Map<String, dynamic> json) {
+    return KostModel(
+      id: json['id']?.toString() ?? '',
+      namaKost: json['nama_kost']?.toString() ?? '',
+      fotoKost: json['foto_kost'] as String?,
+      alamatKost: json['alamat_kost']?.toString() ?? '',
+      hargaKost: _d(json['harga_kost']),
+      luasKamar: _d(json['luas_kamar']),
+      tipeKos: _i(json['tipe_kos'], 3),
+      kelas: _i(json['kelas'], 1),
+      status: _i(json['status'], 1),
+      kodeLokasi: _i(json['kode_lokasi'], 1),
+      wilayahId: json['wilayah_id']?.toString() ?? '',
+      wilayahNama: json['wilayah_nama'] as String?,
+      listrik: _i(json['listrik'], 1),
+      ac: _i(json['ac'], 0),
+      kamarMandiDalam: _i(json['kamar_mandi_dalam'], 0),
+      parkirMotor: _i(json['parkir_motor'], 0),
+      laundry: _i(json['laundry'], 0),
+      wifi: _i(json['wifi'], 0),
+      nomorTelepon: json['nomor_telepon'] as String?,
+      deskripsi: json['deskripsi'] as String?,
+      avgRating: _d(json['avg_rating']),
+      reviewsCount: _i(json['reviews_count'], 0),
+      kelasLabel: json['kelas_label'] as String?,
+      tipeKosLabel: json['tipe_kos_label'] as String?,
+      statusLabel: json['status_label'] as String?,
+      lokasiLabel: json['lokasi_label'] as String?,
+    );
+  }
+
+  // ── Computed labels ───────────────────────────────────────────────
+
+  String get kelasLabelDisplay {
+    if (kelasLabel != null && kelasLabel!.isNotEmpty) return kelasLabel!;
+    switch (kelas) {
+      case 1: return 'Ekonomi';
+      case 2: return 'Standar';
+      case 3: return 'Premium';
+      default: return 'Ekonomi';
+    }
+  }
+
+  String get tipeKosLabelDisplay {
+    if (tipeKosLabel != null && tipeKosLabel!.isNotEmpty) return tipeKosLabel!;
+    switch (tipeKos) {
+      case 1: return 'Pria';
+      case 2: return 'Wanita';
+      case 3: return 'Campur';
+      default: return 'Campur';
+    }
+  }
+
+  String get statusLabelDisplay {
+    if (statusLabel != null && statusLabel!.isNotEmpty) return statusLabel!;
+    if (status == 0) return 'Penuh';
+    if (status == 1) return 'Tersedia';
+    return '$status Kamar Sisa';
+  }
+
+  String get kodeLokasLabelDisplay {
+    if (lokasiLabel != null && lokasiLabel!.isNotEmpty) return lokasiLabel!;
+    const map = {
+      1: 'Dekat Kampus', 2: 'Pusat Kota', 3: 'Pinggir Kota',
+      4: 'Dekat Transportasi Umum', 5: 'Perumahan',
+      6: 'Dekat Pasar / Mall', 7: 'Kawasan Industri',
+      8: 'Pinggir Jalan Utama', 9: 'Pedesaan / Wisata', 10: 'Lainnya',
+    };
+    return map[kodeLokasi] ?? 'Lainnya';
+  }
+
+  List<String> get fasilitasList {
+    final list = <String>[];
+    if (listrik == 1) list.add('⚡ Listrik');
+    if (ac == 1) list.add('❄️ AC');
+    if (kamarMandiDalam == 1) list.add('🚿 KM Dalam');
+    if (parkirMotor == 1) list.add('🏍️ Parkir Motor');
+    if (laundry == 1) list.add('👕 Laundry');
+    if (wifi == 1) list.add('📶 WiFi');
+    return list;
+  }
+
+  static double _d(dynamic v) {
+    if (v == null) return 0.0;
+    if (v is double) return v;
+    if (v is int) return v.toDouble();
+    return double.tryParse(v.toString()) ?? 0.0;
+  }
+
+  static int _i(dynamic v, int fb) {
+    if (v == null) return fb;
+    if (v is int) return v;
+    return int.tryParse(v.toString()) ?? fb;
+  }
+}

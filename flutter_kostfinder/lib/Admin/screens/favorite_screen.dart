@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
-import '../widgets/shared_widgets.dart';
+import '../../widgets/shared_widgets.dart';
 import '../services/api_service.dart';
-import '../widgets/shared_app_bar.dart';
+import '../../widgets/shared_app_bar.dart';
 import 'package:intl/intl.dart';
 
 class FavoriteScreen extends StatefulWidget {

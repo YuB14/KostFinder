@@ -20,11 +20,13 @@ class User extends Authenticatable
         'role',
         'profile_picture',
         'last_login_at',
+        'api_token',
     ];
 
     protected $hidden = [
         'password',
         'remember_token',
+        'api_token',
     ];
 
     protected $casts = [

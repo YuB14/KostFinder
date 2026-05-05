@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
-import '../widgets/shared_widgets.dart';
+import '../../widgets/shared_widgets.dart';
 import 'add_kost_screen.dart';
 import 'kost_detail_screen.dart';
 import '../main.dart';
 import '../services/api_service.dart';
-import '../widgets/shared_app_bar.dart';
+import '../../widgets/shared_app_bar.dart';
 
 class KostScreen extends StatefulWidget {
   const KostScreen({super.key});
@@ -71,7 +71,7 @@ class _KostScreenState extends State<KostScreen> {
       tier = 'Premium';
     }
 
-    final formatCurrency = (dynamic h) => 'Rp ${h ?? 0}';
+    String formatCurrency(dynamic h) => 'Rp ${h ?? 0}';
     final fasList = (k['fasilitas']?.toString() ?? '')
         .split(',')
         .map((e) => e.trim())

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
-import '../widgets/shared_widgets.dart';
+import '../../widgets/shared_widgets.dart';
 import '../services/api_service.dart';
-import '../widgets/shared_app_bar.dart';
+import '../../widgets/shared_app_bar.dart';
 
 class UserScreen extends StatefulWidget {
   const UserScreen({super.key});
@@ -395,9 +395,9 @@ class _UserScreenState extends State<UserScreen> {
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           color: AppColors.coral,
-                          image: photo != null ? DecorationImage(image: NetworkImage(photo), fit: BoxFit.cover) : null,
+                          image: DecorationImage(image: NetworkImage(photo), fit: BoxFit.cover),
                         ),
-                        child: photo == null ? Center(child: Text(_getInitials(name), style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white))) : null,
+                        child: null,
                       ),
                       const SizedBox(width: 8),
                       Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [

@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 
 class AuthController extends Controller
 {
@@ -36,13 +37,40 @@ class AuthController extends Controller
             ], 401);
         }
 
-        // "Ingat Saya" — Auth::login() menerima parameter $remember
-        // Jika true, session bertahan sampai user logout manual
-        // Jika false, session berakhir saat browser ditutup
+        // Cek apakah request dari API (Flutter) atau web browser
+        // Hanya cek URL path, BUKAN Accept header — karena frontend web
+        // juga mengirim Accept: application/json untuk fetch()
+        $isApi = $request->is('api/*');
+
+        if ($isApi) {
+            // ── Mobile / API: Token-based auth ──────────────────────
+            $token = Str::random(64);
+            $user->api_token = hash('sha256', $token);
+            $user->last_login_at = now();
+            $user->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Login berhasil',
+                'token'   => $token,
+                'user'    => [
+                    'id'    => (string) ($user->_id ?? $user->id),
+                    'name'  => $user->name,
+                    'email' => $user->email,
+                    'role'  => $user->role ?? 'user',
+                    'photo' => $user->profile_picture
+                        ? (str_starts_with($user->profile_picture, 'http')
+                            ? $user->profile_picture
+                            : asset('storage/' . $user->profile_picture))
+                        : null,
+                ],
+            ]);
+        }
+
+        // ── Web browser: Session-based auth ─────────────────────
         $remember = (bool) $request->input('remember', false);
         Auth::login($user, $remember);
 
-        // Catat waktu login terakhir
         $user->last_login_at = now();
         $user->save();
 
@@ -125,6 +153,21 @@ class AuthController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return redirect('/login'); // ⬅️ ini saja
+        return redirect('/login');
+    }
+
+    // POST /api/auth/logout — token-based logout untuk Flutter
+    public function apiLogout(Request $request)
+    {
+        $token = $request->bearerToken();
+        if ($token) {
+            $user = User::where('api_token', hash('sha256', $token))->first();
+            if ($user) {
+                $user->api_token = null;
+                $user->save();
+            }
+        }
+
+        return response()->json(['success' => true, 'message' => 'Logout berhasil']);
     }
 }

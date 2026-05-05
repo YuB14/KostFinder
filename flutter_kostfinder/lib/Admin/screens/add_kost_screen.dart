@@ -30,7 +30,7 @@ class _AddKostScreenState extends State<AddKostScreen> {
   int _currentStep = 0;
 
   final ImagePicker _picker = ImagePicker();
-  List<XFile> _selectedImages = [];
+  final List<XFile> _selectedImages = [];
 
   bool get _isEdit => widget.editKost != null;
 

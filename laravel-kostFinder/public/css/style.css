@@ -32,7 +32,8 @@
     --shadow-lg: 0 20px 56px rgba(26, 42, 58, 0.12);
 }
 
-body.dark {
+body.dark,
+html.dark {
     --bg: #0f1923;
     --bg2: #172130;
     --card: #1c2b3a;
@@ -42,10 +43,72 @@ body.dark {
     --border: rgba(255, 255, 255, 0.08);
     --shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
     --shadow-md: 0 8px 28px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 20px 56px rgba(0, 0, 0, 0.5);
     --coral-bg: rgba(232, 67, 13, 0.15);
     --teal-bg: rgba(0, 143, 120, 0.15);
     --yellow-bg: rgba(212, 141, 0, 0.15);
     --blue-bg: rgba(37, 99, 235, 0.15);
+}
+
+/* Dark mode smooth transitions for all themed elements */
+.sidebar,
+.topbar,
+.stat-card,
+.widget,
+.table-wrap,
+.kost-card-dash,
+.review-card,
+.fav-card,
+.modal-box,
+.icon-btn,
+.btn-sm,
+.search-input-sm,
+.kost-mini,
+.filter-dropdown,
+.csel-dropdown,
+.csel-trigger,
+.topbar-dropdown {
+    transition: background 0.35s, color 0.35s, border-color 0.35s, box-shadow 0.35s;
+}
+
+/* Dark mode specific overrides for inputs */
+body.dark .form-group input,
+body.dark .form-group select,
+body.dark .form-group textarea,
+body.dark .mform-group input,
+body.dark .mform-group select,
+body.dark .mform-group textarea,
+body.dark .search-input-sm input,
+body.dark .csel-search {
+    color: var(--text);
+    background: var(--bg2);
+    border-color: var(--border);
+}
+
+/* Dark mode placeholder color */
+body.dark input::placeholder,
+body.dark textarea::placeholder {
+    color: var(--muted);
+}
+
+/* Dark mode table header */
+body.dark thead th {
+    background: var(--bg2);
+}
+
+/* Dark mode km-img gradient */
+body.dark .km-img {
+    background: linear-gradient(135deg, var(--bg2), #1a3045);
+}
+
+/* Dark mode kc-img gradient */
+body.dark .kc-img {
+    background: var(--bg2);
+}
+
+/* Dark mode fav-heart */
+body.dark .fav-heart {
+    background: rgba(28, 43, 58, 0.9);
 }
 html {
     scroll-behavior: smooth;
