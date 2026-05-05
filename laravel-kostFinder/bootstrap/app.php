@@ -14,6 +14,16 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'admin' => \App\Http\Middleware\AdminMiddleware::class,
+            'api.token' => \App\Http\Middleware\ApiTokenAuth::class,
+        ]);
+
+        // Agar API routes bisa membaca session cookie dari web browser.
+        // Tanpa session middleware, Auth::check() di ApiTokenAuth selalu
+        // false untuk request fetch() dari halaman user.
+        $middleware->api(prepend: [
+            \Illuminate\Cookie\Middleware\EncryptCookies::class,
+            \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
+            \Illuminate\Session\Middleware\StartSession::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
