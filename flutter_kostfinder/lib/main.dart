@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'screens/login_screen.dart';
-import 'theme/app_theme.dart';
+import 'package:provider/provider.dart';
+import 'Admin/theme/app_theme.dart';
+import 'providers/auth_provider.dart';
+import 'screens/auth/login_screen.dart';
+import 'screens/main_screen.dart';
+import 'Admin/screens/main_screen.dart' as admin;
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -13,10 +17,17 @@ void main() {
     statusBarColor: Colors.transparent,
     statusBarIconBrightness: Brightness.dark,
   ));
-  runApp(const KostFinderApp());
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => AuthProvider()),
+      ],
+      child: const KostFinderApp(),
+    ),
+  );
 }
 
-final ValueNotifier<ThemeMode> themeNotifier = ValueNotifier(ThemeMode.system);
+final ValueNotifier<ThemeMode> themeNotifier = ValueNotifier(ThemeMode.light);
 
 class KostFinderApp extends StatelessWidget {
   const KostFinderApp({super.key});
@@ -32,8 +43,40 @@ class KostFinderApp extends StatelessWidget {
           theme: AppTheme.light,
           darkTheme: AppTheme.dark,
           themeMode: currentMode,
-          home: const LoginScreen(),
+          home: const AuthWrapper(),
         );
+      },
+    );
+  }
+}
+
+class AuthWrapper extends StatefulWidget {
+  const AuthWrapper({super.key});
+
+  @override
+  State<AuthWrapper> createState() => _AuthWrapperState();
+}
+
+class _AuthWrapperState extends State<AuthWrapper> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<AuthProvider>().checkAuth();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<AuthProvider>(
+      builder: (context, auth, _) {
+        if (auth.isLoggedIn) {
+          if (auth.user?.role == 'admin') {
+            return const admin.MainScreen();
+          }
+          return const MainScreen();
+        }
+        return const LoginScreen();
       },
     );
   }

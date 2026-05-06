@@ -554,8 +554,9 @@ class _ReviewScreenState extends State<ReviewScreen> {
                                 ? AppColors.cardDark
                                 : AppColors.cardLight,
                             onChanged: (v) {
-                              if (v != null)
+                              if (v != null) {
                                 setState(() => _activeFilter = v);
+                              }
                             },
                             items: ['Semua', 'Disetujui', 'Menunggu', 'Ditolak']
                                 .map((String value) {
@@ -694,7 +695,7 @@ class _ReviewCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: border),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8)
+          BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8)
         ],
       ),
       child: Column(
@@ -823,7 +824,7 @@ class _ReviewCard extends StatelessWidget {
     if (usePhoto) {
       return ClipOval(
         child: Image.network(
-          photoUrl!,
+          photoUrl,
           width: 38,
           height: 38,
           fit: BoxFit.cover,

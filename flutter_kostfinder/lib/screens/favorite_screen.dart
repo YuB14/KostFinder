@@ -144,7 +144,7 @@ class _FavCard extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(color: card, borderRadius: BorderRadius.circular(14), border: Border.all(color: border),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8)]),
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 8)]),
       clipBehavior: Clip.hardEdge,
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         // Image area
@@ -170,9 +170,9 @@ class _FavCard extends StatelessWidget {
                   duration: const Duration(milliseconds: 200),
                   width: 32, height: 32,
                   decoration: BoxDecoration(
-                    color: data.isFav ? AppColors.coral : Colors.white.withOpacity(0.8),
+                    color: data.isFav ? AppColors.coral : Colors.white.withValues(alpha: 0.8),
                     shape: BoxShape.circle,
-                    boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 6)],
+                    boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 6)],
                   ),
                   child: Center(child: Text(data.isFav ? '❤️' : '🤍', style: const TextStyle(fontSize: 15))),
                 ),

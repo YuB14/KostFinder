@@ -11,7 +11,15 @@
         href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="{{ asset('css/style.css') }}">
-</head>
+
+    {{-- Prevent Flash of Light Theme (FOLT) — apply dark class before paint --}}
+    <script>
+        (function() {
+            if (localStorage.getItem('kf_theme') === 'dark') {
+                document.documentElement.classList.add('dark');
+            }
+        })();
+    </script></head>
 
 <body class="{{ $bodyClass ?? '' }}">
 

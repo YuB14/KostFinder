@@ -33,6 +33,7 @@ function toggleCollapse() {
 
 function toggleTheme() {
     const isDark = document.body.classList.toggle("dark");
+    document.documentElement.classList.toggle("dark", isDark);
     // Simpan preferensi ke localStorage agar persisten antar halaman
     localStorage.setItem("kf_theme", isDark ? "dark" : "light");
     const btn = document.getElementById("theme-toggle");
@@ -212,6 +213,7 @@ document.addEventListener("click", (e) => {
     const saved = localStorage.getItem("kf_theme");
     if (saved === "dark") {
         document.body.classList.add("dark");
+        document.documentElement.classList.add("dark");
         // Tombol theme mungkin belum ada saat script ini dijalankan,
         // jadi set lewat DOMContentLoaded juga
         document.addEventListener("DOMContentLoaded", () => {

@@ -183,7 +183,7 @@
                 if (!result.success) return;
 
                 const dist = result.data;
-                const colors = { Ekonomis: 'var(--coral)', Standar: 'var(--teal)', Premium: 'var(--yellow)' };
+                const colors = { Ekonomi: 'var(--coral)', Standar: 'var(--teal)', Premium: 'var(--yellow)' };
                 const total = dist.reduce((s, d) => s + d.count, 0);
 
                 if (total === 0) {

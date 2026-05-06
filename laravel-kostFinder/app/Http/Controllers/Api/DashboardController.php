@@ -22,9 +22,11 @@ class DashboardController extends Controller
         $totalKost = Kost::count();
         $totalUser = User::count();
         $totalFav  = Favorite::count();
-        $avgRating = Review::avg('rating') ? round((float) Review::avg('rating'), 2) : 0;
 
-        // ── Bulan ini vs bulan lalu ───────────────────────────────────────
+        // FIX: avg() dipanggil sekali saja, bukan dua kali
+        $rawAvg    = Review::avg('rating');
+        $avgRating = $rawAvg ? round((float) $rawAvg, 2) : 0;
+
         $kostThisMonth = Kost::whereBetween('created_at', [$thisMonthStart, $now])->count();
         $kostLastMonth = Kost::whereBetween('created_at', [$lastMonthStart, $lastMonthEnd])->count();
 
@@ -34,20 +36,20 @@ class DashboardController extends Controller
         $favThisMonth = Favorite::whereBetween('created_at', [$thisMonthStart, $now])->count();
         $favLastMonth = Favorite::whereBetween('created_at', [$lastMonthStart, $lastMonthEnd])->count();
 
-        $ratingThisMonth = Review::whereBetween('created_at', [$thisMonthStart, $now])->avg('rating') ?? 0;
-        $ratingLastMonth = Review::whereBetween('created_at', [$lastMonthStart, $lastMonthEnd])->avg('rating') ?? 0;
+        $reviewThisMonth = Review::whereBetween('created_at', [$thisMonthStart, $now])->count();
+        $reviewLastMonth = Review::whereBetween('created_at', [$lastMonthStart, $lastMonthEnd])->count();
 
         return response()->json([
             'success' => true,
             'data'    => [
                 'total_kost'    => (int) $totalKost,
-                'kost_change'   => $this->calcChange($kostThisMonth,   $kostLastMonth),
+                'kost_change'   => $this->calcChange($kostThisMonth, $kostLastMonth),
                 'total_user'    => (int) $totalUser,
-                'user_change'   => $this->calcChange($userThisMonth,   $userLastMonth),
+                'user_change'   => $this->calcChange($userThisMonth, $userLastMonth),
                 'avg_rating'    => $avgRating,
-                'rating_change' => $this->calcChange($ratingThisMonth, $ratingLastMonth),
+                'rating_change' => $this->calcChange($reviewThisMonth, $reviewLastMonth),
                 'total_fav'     => (int) $totalFav,
-                'fav_change'    => $this->calcChange($favThisMonth,    $favLastMonth),
+                'fav_change'    => $this->calcChange($favThisMonth, $favLastMonth),
             ],
         ]);
     }
@@ -83,16 +85,28 @@ class DashboardController extends Controller
     }
 
     // GET /api/dashboard/kelas-distribution
+    // kelas: 1=ekonomi, 2=standar, 3=premium
     public function kelasDistribution()
     {
         $allKosts = Kost::all();
         $total    = $allKosts->count();
         $dist     = [];
 
-        foreach (['Ekonomis', 'Standar', 'Premium'] as $kelas) {
-            $count  = $allKosts->where('kelas', $kelas)->count();
+        $kelasMap = [
+            1 => 'Ekonomi',
+            2 => 'Standar',
+            3 => 'Premium',
+        ];
+
+        foreach ($kelasMap as $kode => $label) {
+            $count  = $allKosts->where('kelas', $kode)->count();
             $persen = $total > 0 ? round(($count / $total) * 100) : 0;
-            $dist[] = ['kelas' => $kelas, 'count' => (int) $count, 'persen' => (int) $persen];
+            $dist[] = [
+                'kelas'  => $label,
+                'kode'   => $kode,
+                'count'  => (int) $count,
+                'persen' => (int) $persen,
+            ];
         }
 
         return response()->json([
@@ -179,10 +193,7 @@ class DashboardController extends Controller
             ])
             ->values();
 
-        return response()->json([
-            'success' => true,
-            'data'    => $sorted,
-        ]);
+        return response()->json(['success' => true, 'data' => $sorted]);
     }
 
     // GET /api/dashboard/top-kost
@@ -190,7 +201,10 @@ class DashboardController extends Controller
     {
         $kosts = Kost::with('reviews')->get();
 
-        $scored = $kosts->map(function ($k) {
+        $kelasLabels   = [1 => 'Ekonomi', 2 => 'Standar', 3 => 'Premium'];
+        $kelasClassMap = [1 => 'avail',   2 => 'pop',     3 => 'prem'];
+
+        $scored = $kosts->map(function ($k) use ($kelasLabels, $kelasClassMap) {
             $id = (string) ($k->_id ?? $k->id ?? '');
 
             $favCount    = Favorite::where('kost_id', $id)->count();
@@ -206,15 +220,17 @@ class DashboardController extends Controller
                 $foto = asset('storage/' . $foto);
             }
 
-            $kelasMap   = ['Ekonomis' => 'avail', 'Standar' => 'pop', 'Premium' => 'prem'];
-            $badgeClass = $kelasMap[$k->kelas ?? ''] ?? 'avail';
+            $kelasInt   = (int) ($k->kelas ?? 1);
+            $kelasLabel = $kelasLabels[$kelasInt] ?? 'Ekonomi';
+            $badgeClass = $kelasClassMap[$kelasInt] ?? 'avail';
 
             return [
                 'id'          => $id,
                 'nama'        => (string) ($k->nama_kost   ?? ''),
                 'alamat'      => (string) ($k->alamat_kost ?? ''),
                 'harga'       => (float)  ($k->harga_kost  ?? 0),
-                'kelas'       => (string) ($k->kelas       ?? ''),
+                'kelas'       => $kelasInt,
+                'kelas_label' => $kelasLabel,
                 'foto'        => $foto,
                 'fav_count'   => (int) $favCount,
                 'avg_rating'  => $avgRating,
@@ -229,7 +245,7 @@ class DashboardController extends Controller
         ]);
     }
 
-    // ── Helpers ───────────────────────────────────────────────────────────
+    // ── Helpers ──────────────────────────────────────────────────────────────
 
     private function parseDate($value): ?Carbon
     {

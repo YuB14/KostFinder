@@ -6483,7 +6483,7 @@
                 "symfony/var-dumper": "^4.0 || ^5.0"
             },
             "suggest": {
-                "symfony/var-dumper": "Pretty print complex values better with var-dumper available",
+                "symfony/var-dumper": "Pretty debugPrint complex values better with var-dumper available",
                 "whoops/soap": "Formats errors as SOAP responses"
             },
             "type": "library",
@@ -7143,7 +7143,7 @@
                         "Pest\\Plugins\\Help",
                         "Pest\\Plugins\\Memory",
                         "Pest\\Plugins\\Only",
-                        "Pest\\Plugins\\Printer",
+                        "Pest\\Plugins\\debugPrinter",
                         "Pest\\Plugins\\ProcessIsolation",
                         "Pest\\Plugins\\Profile",
                         "Pest\\Plugins\\Retry",

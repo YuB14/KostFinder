@@ -395,9 +395,9 @@ class _UserScreenState extends State<UserScreen> {
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           color: AppColors.coral,
-                          image: photo != null ? DecorationImage(image: NetworkImage(photo), fit: BoxFit.cover) : null,
+                          image: DecorationImage(image: NetworkImage(photo), fit: BoxFit.cover),
                         ),
-                        child: photo == null ? Center(child: Text(_getInitials(name), style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white))) : null,
+                        child: null,
                       ),
                       const SizedBox(width: 8),
                       Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [

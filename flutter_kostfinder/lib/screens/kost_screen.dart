@@ -3,7 +3,6 @@ import '../theme/app_theme.dart';
 import '../widgets/shared_widgets.dart';
 import 'add_kost_screen.dart';
 import 'kost_detail_screen.dart';
-import '../main.dart';
 import '../services/api_service.dart';
 import '../widgets/shared_app_bar.dart';
 
@@ -71,7 +70,7 @@ class _KostScreenState extends State<KostScreen> {
       tier = 'Premium';
     }
 
-    final formatCurrency = (dynamic h) => 'Rp ${h ?? 0}';
+    String formatCurrency(dynamic h) => 'Rp ${h ?? 0}';
     final fasList = (k['fasilitas']?.toString() ?? '')
         .split(',')
         .map((e) => e.trim())
@@ -236,7 +235,7 @@ class _ViewBtn extends StatelessWidget {
         decoration: BoxDecoration(
           color: active ? (isDark ? AppColors.cardDark : AppColors.cardLight) : Colors.transparent,
           borderRadius: BorderRadius.circular(8),
-          boxShadow: active ? [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 6)] : [],
+          boxShadow: active ? [BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 6)] : [],
         ),
         child: Icon(icon, size: 18, color: active ? AppColors.coral : (isDark ? AppColors.mutedDark : AppColors.mutedLight)),
       ),
@@ -268,7 +267,7 @@ class _KostGridCard extends StatelessWidget {
         color: card,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: border),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8)],
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 8)],
       ),
       clipBehavior: Clip.hardEdge,
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
@@ -291,7 +290,7 @@ class _KostGridCard extends StatelessWidget {
                   child: Container(
                     width: 52, height: 52,
                     decoration: BoxDecoration(
-                      color: kost.iconColor.withOpacity(0.15),
+                      color: kost.iconColor.withValues(alpha: 0.15),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(kost.iconData, size: 28, color: kost.iconColor),
@@ -304,7 +303,7 @@ class _KostGridCard extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: badgeColor.withOpacity(0.85),
+                  color: badgeColor.withValues(alpha: 0.85),
                   borderRadius: BorderRadius.circular(100),
                 ),
                 child: Text(kost.tier, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Colors.white)),
@@ -411,7 +410,7 @@ class _KostListCard extends StatelessWidget {
             child: kost.foto != null
                 ? Image.network(kost.foto!, fit: BoxFit.cover)
                 : Container(
-                    color: kost.iconColor.withOpacity(0.1),
+                    color: kost.iconColor.withValues(alpha: 0.1),
                     child: Icon(kost.iconData, size: 26, color: kost.iconColor),
                   ),
           ),

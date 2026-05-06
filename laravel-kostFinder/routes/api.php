@@ -7,12 +7,14 @@ use App\Http\Controllers\Api\KostController;
 use App\Http\Controllers\Api\ReviewController;
 use App\Http\Controllers\Api\FavoriteController;
 use App\Http\Controllers\Api\DashboardController;
+use App\Http\Controllers\Api\WilayahController;
 use App\Http\Controllers\Api\User\UserApiController;
 
 Route::prefix("auth")->group(function () {
 
     Route::post("/register", [AuthController::class, "register"]);
     Route::post("/login", [AuthController::class, "login"]);
+    Route::post("/logout", [AuthController::class, "apiLogout"]);
 
 });
 
@@ -27,7 +29,11 @@ Route::prefix('dashboard')->group(function () {
 Route::get('/users/stats', [UserController::class, 'stats']);
 Route::apiResource('users', UserController::class);
 
+Route::post('kost/import-csv', [KostController::class, 'importCsv']);
 Route::apiResource('kost', KostController::class);
+
+// Wilayah — public (dibutuhkan oleh form admin & Flask)
+Route::apiResource('wilayah', WilayahController::class);
 
 Route::get('review/stats', [ReviewController::class, 'stats']);
 Route::apiResource('review', ReviewController::class);
@@ -35,7 +41,7 @@ Route::apiResource('review', ReviewController::class);
 Route::get('favorite/stats', [FavoriteController::class, 'stats']);
 Route::apiResource('favorite', FavoriteController::class);
 
-Route::prefix('user')->middleware(['web', 'auth'])->group(function () {
+Route::prefix('user')->middleware('api.token')->group(function () {
 
     // Statistik ringkasan
     Route::get('stats',                    [UserApiController::class, 'stats']);
