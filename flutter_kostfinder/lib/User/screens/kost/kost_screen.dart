@@ -78,47 +78,43 @@ class _KostScreenState extends State<KostScreen> {
 
     return Scaffold(
       backgroundColor: bg,
+      appBar: AppBar(
+        backgroundColor: card,
+        elevation: 0,
+        surfaceTintColor: Colors.transparent,
+        automaticallyImplyLeading: false,
+        title: Row(children: [
+          Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(color: AppColors.coralBg, borderRadius: BorderRadius.circular(8)),
+            child: const Icon(Icons.home_work_rounded, color: AppColors.coral, size: 18),
+          ),
+          const SizedBox(width: 10),
+          Text('Cari Kost', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: textColor, letterSpacing: -0.5)),
+        ]),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Divider(height: 1, thickness: 1, color: border),
+        ),
+        actions: [
+          ValueListenableBuilder<ThemeMode>(
+            valueListenable: themeNotifier,
+            builder: (_, mode, __) {
+              final isDarkMode = mode == ThemeMode.dark ||
+                  (mode == ThemeMode.system &&
+                      WidgetsBinding.instance.platformDispatcher.platformBrightness == Brightness.dark);
+              return IconButton(
+                icon: Icon(isDarkMode ? Icons.light_mode_rounded : Icons.dark_mode_rounded, size: 20, color: muted),
+                onPressed: () => themeNotifier.value = isDarkMode ? ThemeMode.light : ThemeMode.dark,
+              );
+            },
+          ),
+          const SizedBox(width: 4),
+        ],
+      ),
       body: CustomScrollView(
           controller: _scrollCtrl,
           slivers: [
-          SliverAppBar(
-            expandedHeight: 0,
-            floating: false,
-            pinned: true,
-            automaticallyImplyLeading: false,
-            backgroundColor: card,
-            elevation: 0,
-            surfaceTintColor: Colors.transparent,
-            title: Row(children: [
-              Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(color: AppColors.coralBg, borderRadius: BorderRadius.circular(8)),
-                child: const Icon(Icons.home_work_rounded, color: AppColors.coral, size: 18),
-              ),
-              const SizedBox(width: 10),
-              Text('Cari Kost', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: textColor, letterSpacing: -0.5)),
-            ]),
-            bottom: PreferredSize(
-              preferredSize: const Size.fromHeight(1),
-              child: Divider(height: 1, thickness: 1, color: border),
-            ),
-            actions: [
-              ValueListenableBuilder<ThemeMode>(
-                valueListenable: themeNotifier,
-                builder: (_, mode, __) {
-                  final isDarkMode = mode == ThemeMode.dark ||
-                      (mode == ThemeMode.system &&
-                          WidgetsBinding.instance.platformDispatcher.platformBrightness == Brightness.dark);
-                  return IconButton(
-                    icon: Icon(isDarkMode ? Icons.light_mode_rounded : Icons.dark_mode_rounded, size: 20, color: muted),
-                    onPressed: () => themeNotifier.value = isDarkMode ? ThemeMode.light : ThemeMode.dark,
-                  );
-                },
-              ),
-              const SizedBox(width: 4),
-            ],
-          ),
-
           // Search bar
           SliverToBoxAdapter(
             child: Padding(

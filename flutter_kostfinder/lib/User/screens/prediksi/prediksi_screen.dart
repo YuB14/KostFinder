@@ -93,11 +93,23 @@ class _PrediksiScreenState extends State<PrediksiScreen> {
     return Scaffold(
       backgroundColor: bg,
       appBar: AppBar(
-        backgroundColor: isDark ? AppColors.cardDark : AppColors.cardLight,
+        backgroundColor: card,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
-        title: Text('Prediksi Kost',
-            style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18, color: textColor)),
+        automaticallyImplyLeading: false,
+        title: Row(children: [
+          Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(color: AppColors.coralBg, borderRadius: BorderRadius.circular(8)),
+            child: const Icon(Icons.auto_graph_rounded, color: AppColors.coral, size: 18),
+          ),
+          const SizedBox(width: 10),
+          Text('Prediksi Kost', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: textColor, letterSpacing: -0.5)),
+        ]),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Divider(height: 1, thickness: 1, color: border),
+        ),
         actions: [
           ValueListenableBuilder<ThemeMode>(
             valueListenable: themeNotifier,

@@ -102,133 +102,111 @@ class _FavoriteScreenState extends State<FavoriteScreen> {
         .toString();
 
     return Scaffold(
-      body: CustomScrollView(
-          controller: _scrollCtrl,
-          slivers: [
-          SliverAppBar(
-            expandedHeight: 0,
-            floating: false,
-            pinned: true,
-            automaticallyImplyLeading: false,
-            backgroundColor: card,
-            elevation: 0,
-            surfaceTintColor: Colors.transparent,
-            title: Row(children: [
-              Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(color: AppColors.coralBg, borderRadius: BorderRadius.circular(8)),
-                child: const Icon(Icons.favorite_rounded, color: AppColors.coral, size: 18),
-              ),
-              const SizedBox(width: 10),
-              Text('Kost Favorit', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: textColor, letterSpacing: -0.5)),
-            ]),
-            bottom: PreferredSize(
-              preferredSize: const Size.fromHeight(1),
-              child: Divider(height: 1, thickness: 1, color: border),
-            ),
-            actions: [
-              ValueListenableBuilder<ThemeMode>(
-                valueListenable: themeNotifier,
-                builder: (_, mode, __) {
-                  final isDarkMode = mode == ThemeMode.dark ||
-                      (mode == ThemeMode.system &&
-                          WidgetsBinding.instance.platformDispatcher.platformBrightness == Brightness.dark);
-                  return IconButton(
-                    icon: Icon(isDarkMode ? Icons.light_mode_rounded : Icons.dark_mode_rounded, size: 20, color: muted),
-                    onPressed: () => themeNotifier.value = isDarkMode ? ThemeMode.light : ThemeMode.dark,
-                  );
-                },
-              ),
-              const SizedBox(width: 4),
-            ],
+      appBar: AppBar(
+        backgroundColor: isDark ? AppColors.cardDark : Colors.white,
+        elevation: 0,
+        surfaceTintColor: Colors.transparent,
+        automaticallyImplyLeading: false,
+        title: Row(children: [
+          Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(color: AppColors.coralBg, borderRadius: BorderRadius.circular(8)),
+            child: const Icon(Icons.favorite_rounded, color: AppColors.coral, size: 18),
           ),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child:
-                  Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Row(children: [
-                  _StatCard(
-                      icon: Icons.favorite_rounded,
-                      value: totalFav,
-                      label: 'Total Favorit',
-                      accentColor: AppColors.coral,
-                      accentBg: AppColors.coralBg),
-                  const SizedBox(width: 10),
-                  _StatCard(
-                      icon: Icons.emoji_events_rounded,
-                      value: terbaru,
-                      label: 'Terbaru',
-                      accentColor: AppColors.teal,
-                      accentBg: AppColors.tealBg),
-                  const SizedBox(width: 10),
-                  _StatCard(
-                      icon: Icons.check_circle_rounded,
-                      value: aktif,
-                      label: 'Kost Aktif',
-                      accentColor: AppColors.yellow,
-                      accentBg: AppColors.yellowBg),
-                ]),
-                const SizedBox(height: 20),
-                Text('Daftar Kost Favorit',
-                    style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w800,
-                        color: textColor)),
-                const SizedBox(height: 12),
-              ]),
-            ),
+          const SizedBox(width: 10),
+          Text('Kost Favorit', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: textColor, letterSpacing: -0.5)),
+        ]),
+        actions: [
+          ValueListenableBuilder<ThemeMode>(
+            valueListenable: themeNotifier,
+            builder: (_, mode, __) {
+              final isDarkMode = mode == ThemeMode.dark ||
+                  (mode == ThemeMode.system &&
+                      WidgetsBinding.instance.platformDispatcher.platformBrightness == Brightness.dark);
+              return IconButton(
+                icon: Icon(isDarkMode ? Icons.light_mode_rounded : Icons.dark_mode_rounded, size: 20, color: muted),
+                onPressed: () => themeNotifier.value = isDarkMode ? ThemeMode.light : ThemeMode.dark,
+              );
+            },
           ),
-
-          if (_isLoading)
-            const SliverFillRemaining(
-                child: Center(
-                    child:
-                        CircularProgressIndicator(color: AppColors.coral)))
-          else if (_favs.isEmpty)
-            SliverFillRemaining(
-              child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.favorite_border_rounded,
-                        size: 56, color: muted),
-                    const SizedBox(height: 12),
-                    Text('Belum ada kost favorit',
-                        style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w800,
-                            color: textColor)),
-                    const SizedBox(height: 8),
-                    Text('Cari kost dan simpan yang kamu suka!',
-                        style: TextStyle(color: muted, fontSize: 13)),
-                  ]),
-            )
-          else
-            SliverPadding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 80),
-              sliver: SliverGrid(
-                gridDelegate:
-                    const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 12,
-                  mainAxisSpacing: 12,
-                  childAspectRatio: 0.78,
-                ),
-                delegate: SliverChildBuilderDelegate(
-                  (_, i) => _FavCard(
-                      data: _favs[i],
-                      isDark: isDark,
-                      onToggle: () => _toggleFav(i)),
-                  childCount: _favs.length,
-                ),
-              ),
-            ),
+          const SizedBox(width: 4),
         ],
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Divider(height: 1, thickness: 1, color: border),
+        ),
+      ),
+      body: RefreshIndicator(
+        onRefresh: _loadFavorites,
+        color: AppColors.coral,
+        child: _isLoading
+            ? const Center(child: CircularProgressIndicator(color: AppColors.coral))
+            : _favs.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.favorite_border_rounded, size: 56, color: muted),
+                        const SizedBox(height: 12),
+                        Text('Belum ada kost favorit',
+                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: textColor)),
+                        const SizedBox(height: 8),
+                        Text('Cari kost dan simpan yang kamu suka!',
+                            style: TextStyle(color: muted, fontSize: 13)),
+                      ],
+                    ),
+                  )
+                : ListView(
+                    padding: const EdgeInsets.all(16),
+                    children: [
+                      Row(children: [
+                        Expanded(child: _StatCard(
+                            icon: Icons.favorite_rounded,
+                            value: totalFav,
+                            label: 'Total Favorit',
+                            accentColor: AppColors.coral,
+                            accentBg: AppColors.coralBg)),
+                        const SizedBox(width: 10),
+                        Expanded(child: _StatCard(
+                            icon: Icons.emoji_events_rounded,
+                            value: terbaru,
+                            label: 'Terbaru',
+                            accentColor: AppColors.teal,
+                            accentBg: AppColors.tealBg)),
+                        const SizedBox(width: 10),
+                        Expanded(child: _StatCard(
+                            icon: Icons.check_circle_rounded,
+                            value: aktif,
+                            label: 'Kost Aktif',
+                            accentColor: AppColors.yellow,
+                            accentBg: AppColors.yellowBg)),
+                      ]),
+                      const SizedBox(height: 20),
+                      Text('Daftar Kost Favorit',
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: textColor)),
+                      const SizedBox(height: 12),
+                      GridView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          crossAxisSpacing: 12,
+                          mainAxisSpacing: 12,
+                          childAspectRatio: 0.78,
+                        ),
+                        itemCount: _favs.length,
+                        itemBuilder: (_, i) => _FavCard(
+                            data: _favs[i],
+                            isDark: isDark,
+                            onToggle: () => _toggleFav(i)),
+                      ),
+                      const SizedBox(height: 80),
+                    ],
+                  ),
       ),
     );
   }
 }
-
 class _StatCard extends StatelessWidget {
   final IconData icon;
   final String value, label;
