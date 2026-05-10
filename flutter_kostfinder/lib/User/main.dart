@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'theme/app_theme.dart';
+import 'theme/theme_notifier.dart';
 import 'services/api_service.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/main_screen.dart';
+
+export 'theme/theme_notifier.dart' show themeNotifier;
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -17,8 +20,6 @@ void main() {
   ));
   runApp(const UserApp());
 }
-
-final ValueNotifier<ThemeMode> themeNotifier = ValueNotifier(ThemeMode.system);
 
 class UserApp extends StatelessWidget {
   const UserApp({super.key});

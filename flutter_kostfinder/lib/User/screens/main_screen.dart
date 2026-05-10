@@ -16,22 +16,23 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
 
+  // Screens: 0=Kost, 1=Review, 2=Prediksi, 3=Favorit, 4=Beranda
   final _screens = const [
-    DashboardScreen(),
     KostScreen(),
     ReviewScreen(),
-    FavoriteScreen(),
     PrediksiScreen(),
+    FavoriteScreen(),
+    DashboardScreen(),
   ];
 
   static const _leftTabs = [
-    _Tab(icon: Icons.grid_view_rounded, label: 'Beranda', screenIdx: 0),
-    _Tab(icon: Icons.home_work_rounded, label: 'Kost', screenIdx: 1),
+    _Tab(icon: Icons.home_work_rounded, label: 'Kost', screenIdx: 0),
+    _Tab(icon: Icons.rate_review_rounded, label: 'Review', screenIdx: 1),
   ];
 
   static const _rightTabs = [
     _Tab(icon: Icons.favorite_rounded, label: 'Favorit', screenIdx: 3),
-    _Tab(icon: Icons.auto_graph_rounded, label: 'Prediksi', screenIdx: 4),
+    _Tab(icon: Icons.grid_view_rounded, label: 'Beranda', screenIdx: 4),
   ];
 
   @override
@@ -63,10 +64,10 @@ class _MainScreenState extends State<MainScreen> {
               height: 60,
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
-               crossAxisAlignment: CrossAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   ..._leftTabs.map((t) => _buildItem(t, muted)),
-                  _buildReviewItem(muted),
+                  _buildPrediksiItem(muted),
                   ..._rightTabs.map((t) => _buildItem(t, muted)),
                 ],
               ),
@@ -77,7 +78,7 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
-  Widget _buildReviewItem(Color muted) {
+  Widget _buildPrediksiItem(Color muted) {
     final active = _currentIndex == 2;
     return GestureDetector(
       onTap: () => setState(() => _currentIndex = 2),
@@ -93,9 +94,9 @@ class _MainScreenState extends State<MainScreen> {
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.rate_review_rounded, size: 22, color: active ? AppColors.coral : muted),
+            Icon(Icons.auto_graph_rounded, size: 22, color: active ? AppColors.coral : muted),
             const SizedBox(height: 2),
-            Text('Review', style: TextStyle(fontSize: 9, fontWeight: active ? FontWeight.w700 : FontWeight.w500, color: active ? AppColors.coral : muted, height: 1.0)),
+            Text('Prediksi', style: TextStyle(fontSize: 9, fontWeight: active ? FontWeight.w700 : FontWeight.w500, color: active ? AppColors.coral : muted, height: 1.0)),
           ],
         ),
       ),

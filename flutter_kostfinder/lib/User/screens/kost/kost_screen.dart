@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 import '../../services/api_service.dart';
 import '../../utils/helpers.dart';
+import '../../theme/theme_notifier.dart';
 
 class KostScreen extends StatefulWidget {
   const KostScreen({super.key});
@@ -15,6 +16,8 @@ class _KostScreenState extends State<KostScreen> {
   List<dynamic> _filtered = [];
   bool _loading = true;
   final _searchCtrl = TextEditingController();
+  final _scrollCtrl = ScrollController();
+  bool _scrolled = false;
   String _filterKelas = 'Semua';
   String _filterJenis = 'Semua';
 
@@ -23,11 +26,16 @@ class _KostScreenState extends State<KostScreen> {
     super.initState();
     _loadKosts();
     _searchCtrl.addListener(_applyFilter);
+    _scrollCtrl.addListener(() {
+      final isScrolled = _scrollCtrl.offset > 60;
+      if (isScrolled != _scrolled) setState(() => _scrolled = isScrolled);
+    });
   }
 
   @override
   void dispose() {
     _searchCtrl.dispose();
+    _scrollCtrl.dispose();
     super.dispose();
   }
 
@@ -71,71 +79,73 @@ class _KostScreenState extends State<KostScreen> {
     return Scaffold(
       backgroundColor: bg,
       body: CustomScrollView(
-        slivers: [
-          SliverToBoxAdapter(
-            child: Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [AppColors.coral, AppColors.coral2],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
+          controller: _scrollCtrl,
+          slivers: [
+          SliverAppBar(
+            expandedHeight: 0,
+            floating: false,
+            pinned: true,
+            automaticallyImplyLeading: false,
+            backgroundColor: card,
+            elevation: 0,
+            surfaceTintColor: Colors.transparent,
+            title: Row(children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(color: AppColors.coralBg, borderRadius: BorderRadius.circular(8)),
+                child: const Icon(Icons.home_work_rounded, color: AppColors.coral, size: 18),
               ),
-              child: SafeArea(
-                bottom: false,
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 14, 20, 14),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Row(children: [
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.2),
-                              borderRadius: BorderRadius.circular(12)),
-                          child: const Icon(Icons.home_work_rounded, color: Colors.white, size: 20),
-                        ),
-                        const SizedBox(width: 12),
-                        const Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                          Text('Cari Kost',
-                              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Colors.white)),
-                          Text('Temukan kost impianmu',
-                              style: TextStyle(fontSize: 11, color: Colors.white70)),
-                        ]),
-                      ]),
-                      const SizedBox(height: 12),
-                      TextField(
-                        controller: _searchCtrl,
-                        style: const TextStyle(fontSize: 13, color: AppColors.textLight),
-                        decoration: InputDecoration(
-                          hintText: 'Cari nama, alamat, fasilitas...',
-                          hintStyle: const TextStyle(fontSize: 13, color: AppColors.mutedLight),
-                          prefixIcon: const Icon(Icons.search_rounded, color: AppColors.mutedLight, size: 18),
-                          filled: true,
-                          fillColor: Colors.white,
-                          isDense: true,
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                          border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                          enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                          focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                        ),
-                      ),
-                    ],
-                  ),
+              const SizedBox(width: 10),
+              Text('Cari Kost', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: textColor, letterSpacing: -0.5)),
+            ]),
+            bottom: PreferredSize(
+              preferredSize: const Size.fromHeight(1),
+              child: Divider(height: 1, thickness: 1, color: border),
+            ),
+            actions: [
+              ValueListenableBuilder<ThemeMode>(
+                valueListenable: themeNotifier,
+                builder: (_, mode, __) {
+                  final isDarkMode = mode == ThemeMode.dark ||
+                      (mode == ThemeMode.system &&
+                          WidgetsBinding.instance.platformDispatcher.platformBrightness == Brightness.dark);
+                  return IconButton(
+                    icon: Icon(isDarkMode ? Icons.light_mode_rounded : Icons.dark_mode_rounded, size: 20, color: muted),
+                    onPressed: () => themeNotifier.value = isDarkMode ? ThemeMode.light : ThemeMode.dark,
+                  );
+                },
+              ),
+              const SizedBox(width: 4),
+            ],
+          ),
+
+          // Search bar
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+              child: TextField(
+                controller: _searchCtrl,
+                style: TextStyle(fontSize: 13, color: textColor),
+                decoration: InputDecoration(
+                  hintText: 'Cari nama, alamat, fasilitas...',
+                  hintStyle: TextStyle(fontSize: 13, color: muted),
+                  prefixIcon: Icon(Icons.search_rounded, color: muted, size: 18),
+                  filled: true,
+                  fillColor: isDark ? AppColors.bg2Dark : AppColors.bg2Light,
+                  isDense: true,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: border)),
+                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: border)),
+                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.coral)),
                 ),
               ),
             ),
           ),
 
-  
           // Filter chips
           SliverToBoxAdapter(
             child: Column(children: [
+              const SizedBox(height: 10),
               SizedBox(
                 height: 44,
                 child: ListView(

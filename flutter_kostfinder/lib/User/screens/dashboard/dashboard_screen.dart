@@ -4,6 +4,7 @@ import '../../theme/app_theme.dart';
 import '../../services/api_service.dart';
 import '../../utils/helpers.dart';
 import '../auth/login_screen.dart';
+import '../../theme/theme_notifier.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -13,6 +14,8 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   bool _isLoading = true;
+  bool _scrolled = false;
+  final _scrollCtrl = ScrollController();
   String _userName = '';
   String _userEmail = '';
   String? _userPhotoUrl;
@@ -25,6 +28,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void initState() {
     super.initState();
     _loadData();
+    _scrollCtrl.addListener(() {
+      final isScrolled = _scrollCtrl.offset > 60;
+      if (isScrolled != _scrolled) setState(() => _scrolled = isScrolled);
+    });
+  }
+
+  @override
+  void dispose() {
+    _scrollCtrl.dispose();
+    super.dispose();
   }
 
   Future<void> _loadData() async {
@@ -75,63 +88,65 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final border = isDark ? AppColors.borderDark : AppColors.borderLight;
     final muted = isDark ? AppColors.mutedDark : AppColors.mutedLight;
     final textColor = isDark ? AppColors.textDark : AppColors.textLight;
+    final card = isDark ? AppColors.cardDark : AppColors.cardLight;
+    final border = isDark ? AppColors.borderDark : AppColors.borderLight;
 
     return Scaffold(
       body: RefreshIndicator(
         onRefresh: _loadData,
         color: AppColors.coral,
         child: CustomScrollView(
+          controller: _scrollCtrl,
           slivers: [
-            SliverToBoxAdapter(
-              child: Container(
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [AppColors.coral, AppColors.coral2],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                ),
-                child: SafeArea(
-                  bottom: false,
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        CircleAvatar(
-                          radius: 24,
-                          backgroundColor: Colors.white.withValues(alpha: 0.3),
-                          backgroundImage: _userPhotoUrl != null ? NetworkImage(_userPhotoUrl!) : null,
-                          child: _userPhotoUrl == null
-                              ? Text(Helpers.initials(_userName),
-                                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 16))
-                              : null,
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text('Halo, ${_userName.split(' ').first}!',
-                                  style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w700)),
-                              Text(_userEmail,
-                                  style: const TextStyle(color: Colors.white70, fontSize: 12)),
-                            ],
-                          ),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.logout_rounded, color: Colors.white),
-                          onPressed: _logout,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
+          SliverAppBar(
+            expandedHeight: 0,
+            floating: false,
+            pinned: true,
+            automaticallyImplyLeading: false,
+            backgroundColor: card,
+            elevation: 0,
+            surfaceTintColor: Colors.transparent,
+            title: Row(children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(color: AppColors.coralBg, borderRadius: BorderRadius.circular(8)),
+                child: const Icon(Icons.home_work_rounded, color: AppColors.coral, size: 18),
               ),
+              const SizedBox(width: 10),
+              Text('KostFinder', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: textColor, letterSpacing: -0.5)),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(color: AppColors.coralBg, borderRadius: BorderRadius.circular(6)),
+                child: const Text('User', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: AppColors.coral)),
+              ),
+            ]),
+            bottom: PreferredSize(
+              preferredSize: const Size.fromHeight(1),
+              child: Divider(height: 1, thickness: 1, color: border),
             ),
+            actions: [
+              ValueListenableBuilder<ThemeMode>(
+                valueListenable: themeNotifier,
+                builder: (_, mode, __) {
+                  final isDarkMode = mode == ThemeMode.dark ||
+                      (mode == ThemeMode.system &&
+                          WidgetsBinding.instance.platformDispatcher.platformBrightness == Brightness.dark);
+                  return IconButton(
+                    icon: Icon(isDarkMode ? Icons.light_mode_rounded : Icons.dark_mode_rounded, size: 20, color: muted),
+                    onPressed: () => themeNotifier.value = isDarkMode ? ThemeMode.light : ThemeMode.dark,
+                  );
+                },
+              ),
+              IconButton(
+                icon: Icon(Icons.logout_rounded, color: muted, size: 20),
+                onPressed: _logout,
+              ),
+              const SizedBox(width: 4),
+            ],
+          ),
 
-            if (_isLoading)
+                        if (_isLoading)
               const SliverFillRemaining(
                   child: Center(child: CircularProgressIndicator(color: AppColors.coral)))
             else

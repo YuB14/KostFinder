@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../widgets/shared_widgets.dart';
-import '../../../widgets/shared_app_bar.dart';
 import '../../theme/app_theme.dart';
 import '../../services/api_service.dart';
+import '../../theme/theme_notifier.dart';
 
 class ReviewScreen extends StatefulWidget {
   const ReviewScreen({super.key});
@@ -179,6 +179,18 @@ class _ReviewScreenState extends State<ReviewScreen> {
           Text('Ulasan Saya', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: textColor, letterSpacing: -0.5)),
         ]),
         actions: [
+          ValueListenableBuilder<ThemeMode>(
+            valueListenable: themeNotifier,
+            builder: (_, mode, __) {
+              final isDarkMode = mode == ThemeMode.dark ||
+                  (mode == ThemeMode.system &&
+                      WidgetsBinding.instance.platformDispatcher.platformBrightness == Brightness.dark);
+              return IconButton(
+                icon: Icon(isDarkMode ? Icons.light_mode_rounded : Icons.dark_mode_rounded, size: 20, color: muted),
+                onPressed: () => themeNotifier.value = isDarkMode ? ThemeMode.light : ThemeMode.dark,
+              );
+            },
+          ),
           TextButton.icon(
             onPressed: () => _showFormSheet(),
             icon: const Icon(Icons.add_rounded, color: AppColors.coral, size: 18),

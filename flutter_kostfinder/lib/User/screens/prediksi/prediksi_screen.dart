@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import '../../services/prediksi_service.dart';
 import '../../services/favorite_service.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/helpers.dart';
+import '../../theme/theme_notifier.dart';
 
 class PrediksiScreen extends StatefulWidget {
   const PrediksiScreen({super.key});
@@ -98,6 +98,21 @@ class _PrediksiScreenState extends State<PrediksiScreen> {
         elevation: 0,
         title: Text('Prediksi Kost',
             style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18, color: textColor)),
+        actions: [
+          ValueListenableBuilder<ThemeMode>(
+            valueListenable: themeNotifier,
+            builder: (_, mode, __) {
+              final isDarkMode = mode == ThemeMode.dark ||
+                  (mode == ThemeMode.system &&
+                      WidgetsBinding.instance.platformDispatcher.platformBrightness == Brightness.dark);
+              return IconButton(
+                icon: Icon(isDarkMode ? Icons.light_mode_rounded : Icons.dark_mode_rounded, size: 20, color: muted),
+                onPressed: () => themeNotifier.value = isDarkMode ? ThemeMode.light : ThemeMode.dark,
+              );
+            },
+          ),
+          const SizedBox(width: 4),
+        ],
       ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
@@ -318,6 +333,7 @@ class _PrediksiScreenState extends State<PrediksiScreen> {
                   ? ((k.skorCocok / _maxSkor!) * 100).clamp(0, 100).toInt()
                   : 0;
               return _PrediksiCard(
+                key: ValueKey(k.id),
                 item: k,
                 isTop: i == 0,
                 persen: persen,
@@ -359,6 +375,7 @@ class _PrediksiCard extends StatelessWidget {
   final VoidCallback onFav;
 
   const _PrediksiCard({
+    super.key,
     required this.item,
     required this.isTop,
     required this.persen,
@@ -408,10 +425,10 @@ class _PrediksiCard extends StatelessWidget {
                 ClipRRect(
                   borderRadius: BorderRadius.circular(10),
                   child: item.fotoKost != null
-                      ? CachedNetworkImage(
-                          imageUrl: item.fotoKost!,
+                      ? Image.network(
+                          item.fotoKost!,
                           width: 80, height: 80, fit: BoxFit.cover,
-                          errorWidget: (_, __, ___) => Container(
+                          errorBuilder: (_, __, ___) => Container(
                               width: 80, height: 80, color: bg2,
                               child: Icon(Icons.home_rounded, color: muted)),
                         )

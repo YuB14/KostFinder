@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../theme/app_theme.dart';
 import '../../services/api_service.dart';
+import '../../theme/theme_notifier.dart';
 
 class FavoriteScreen extends StatefulWidget {
   const FavoriteScreen({super.key});
@@ -12,12 +13,24 @@ class FavoriteScreen extends StatefulWidget {
 
 class _FavoriteScreenState extends State<FavoriteScreen> {
   bool _isLoading = true;
+  bool _scrolled = false;
+  final _scrollCtrl = ScrollController();
   List<_FavData> _favs = [];
 
   @override
   void initState() {
     super.initState();
     _loadFavorites();
+    _scrollCtrl.addListener(() {
+      final isScrolled = _scrollCtrl.offset > 50;
+      if (isScrolled != _scrolled) setState(() => _scrolled = isScrolled);
+    });
+  }
+
+  @override
+  void dispose() {
+    _scrollCtrl.dispose();
+    super.dispose();
   }
 
   Future<void> _loadFavorites() async {
@@ -78,6 +91,8 @@ class _FavoriteScreenState extends State<FavoriteScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final textColor = isDark ? AppColors.textDark : AppColors.textLight;
     final muted = isDark ? AppColors.mutedDark : AppColors.mutedLight;
+    final card = isDark ? AppColors.cardDark : AppColors.cardLight;
+    final border = isDark ? AppColors.borderDark : AppColors.borderLight;
 
     final totalFav = _favs.length.toString();
     final terbaru = _favs.isNotEmpty ? _favs.first.name : '-';
@@ -88,56 +103,45 @@ class _FavoriteScreenState extends State<FavoriteScreen> {
 
     return Scaffold(
       body: CustomScrollView(
-        slivers: [
+          controller: _scrollCtrl,
+          slivers: [
           SliverAppBar(
+            expandedHeight: 0,
+            floating: false,
+            pinned: true,
             automaticallyImplyLeading: false,
-            backgroundColor: AppColors.coral,
-            toolbarHeight: 0,
-          ),
-          SliverToBoxAdapter(
-            child: Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                    colors: [AppColors.coral, AppColors.coral2],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight),
+            backgroundColor: card,
+            elevation: 0,
+            surfaceTintColor: Colors.transparent,
+            title: Row(children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(color: AppColors.coralBg, borderRadius: BorderRadius.circular(8)),
+                child: const Icon(Icons.favorite_rounded, color: AppColors.coral, size: 18),
               ),
-              child: SafeArea(
-                bottom: false,
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(12)),
-                        child: const Icon(Icons.favorite_rounded,
-                            color: Colors.white, size: 22),
-                      ),
-                      const SizedBox(width: 12),
-                      const Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text('Kost Favorit',
-                                style: TextStyle(
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.w800,
-                                    color: Colors.white)),
-                            Text('Daftar kost yang kamu simpan',
-                                style: TextStyle(
-                                    fontSize: 11, color: Colors.white70)),
-                          ]),
-                    ],
-                  ),
-                ),
-              ),
+              const SizedBox(width: 10),
+              Text('Kost Favorit', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: textColor, letterSpacing: -0.5)),
+            ]),
+            bottom: PreferredSize(
+              preferredSize: const Size.fromHeight(1),
+              child: Divider(height: 1, thickness: 1, color: border),
             ),
+            actions: [
+              ValueListenableBuilder<ThemeMode>(
+                valueListenable: themeNotifier,
+                builder: (_, mode, __) {
+                  final isDarkMode = mode == ThemeMode.dark ||
+                      (mode == ThemeMode.system &&
+                          WidgetsBinding.instance.platformDispatcher.platformBrightness == Brightness.dark);
+                  return IconButton(
+                    icon: Icon(isDarkMode ? Icons.light_mode_rounded : Icons.dark_mode_rounded, size: 20, color: muted),
+                    onPressed: () => themeNotifier.value = isDarkMode ? ThemeMode.light : ThemeMode.dark,
+                  );
+                },
+              ),
+              const SizedBox(width: 4),
+            ],
           ),
-
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.all(16),
