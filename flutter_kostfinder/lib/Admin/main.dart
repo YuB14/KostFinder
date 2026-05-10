@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'screens/login_screen.dart';
+import 'screens/main_screen.dart'; // bypass: langsung ke beranda admin
 import 'theme/app_theme.dart';
 
 void main() {
@@ -32,7 +32,7 @@ class KostFinderApp extends StatelessWidget {
           theme: AppTheme.light,
           darkTheme: AppTheme.dark,
           themeMode: currentMode,
-          home: const LoginScreen(),
+          home: const MainScreen(), // BYPASS: langsung beranda admin
         );
       },
     );

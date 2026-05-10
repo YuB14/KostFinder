@@ -84,7 +84,7 @@ class _PrediksiScreenState extends State<PrediksiScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
-        title: const Text('Prediksi Kost 🤖', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18)),
+        title: const Text('Prediksi Kost', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18)),
       ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
@@ -115,7 +115,7 @@ class _PrediksiScreenState extends State<PrediksiScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('🎯 Input Preferensi', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800)),
+                const Text('Input Preferensi', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800)),
                 const SizedBox(height: 16),
 
                 // Harga Max
@@ -234,7 +234,7 @@ class _PrediksiScreenState extends State<PrediksiScreen> {
                     ),
                     child: _loading
                         ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                        : const Text('🤖 Prediksi Kost Untukku', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+                        : const Text('Prediksi Kost Untukku', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
                   ),
                 ),
               ],
@@ -247,7 +247,7 @@ class _PrediksiScreenState extends State<PrediksiScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text('🎯 Hasil Prediksi', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800)),
+                const Text('Hasil Prediksi', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800)),
                 Text('${_results.length} kost', style: const TextStyle(fontSize: 12, color: Color(0xFF6B7E94))),
               ],
             ),
@@ -266,9 +266,9 @@ class _PrediksiScreenState extends State<PrediksiScreen> {
                   final r = await FavoriteService.addFavorite(k.id);
                   if (!mounted) return;
                   final msg = r['status'] == 409
-                      ? 'Sudah ada di favorit ⚠️'
+                      ? 'Sudah ada di favorit'
                       : r['success'] == true
-                          ? 'Ditambahkan ke favorit! ❤️'
+                          ? 'Ditambahkan ke favorit'
                           : 'Gagal menambahkan';
                   ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
                 },
@@ -318,7 +318,7 @@ class _PrediksiCard extends StatelessWidget {
                 color: Color(0xFFE8430D),
                 borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
               ),
-              child: const Center(child: Text('🏆 PALING COCOK', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w800))),
+              child: const Center(child: Text('PALING COCOK', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 0.5))),
             ),
           Padding(
             padding: const EdgeInsets.all(14),
@@ -342,7 +342,11 @@ class _PrediksiCard extends StatelessWidget {
                     children: [
                       Text(item.namaKost, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800), maxLines: 1, overflow: TextOverflow.ellipsis),
                       const SizedBox(height: 2),
-                      Text('📍 ${item.alamatKost}', style: const TextStyle(fontSize: 11, color: Color(0xFF6B7E94)), maxLines: 1, overflow: TextOverflow.ellipsis),
+                      Row(children: [
+                        const Icon(Icons.location_on_rounded, size: 11, color: Color(0xFF6B7E94)),
+                        const SizedBox(width: 3),
+                        Expanded(child: Text(item.alamatKost, style: const TextStyle(fontSize: 11, color: Color(0xFF6B7E94)), maxLines: 1, overflow: TextOverflow.ellipsis)),
+                      ]),
                       const SizedBox(height: 6),
                       Text(Helpers.formatRupiah(item.hargaKost), style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: Color(0xFFE8430D))),
                       const SizedBox(height: 6),

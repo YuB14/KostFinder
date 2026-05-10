@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../widgets/shared_widgets.dart';
 import '../../theme/app_theme.dart';
 import '../../services/api_service.dart';
 import '../../utils/helpers.dart';
@@ -6,7 +7,6 @@ import '../auth/login_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
-
   @override
   State<DashboardScreen> createState() => _DashboardScreenState();
 }
@@ -38,21 +38,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
         final photo = u['profile_picture'];
         if (photo != null) _userPhotoUrl = ApiService.getImageUrl(photo.toString());
       }
-
       final results = await Future.wait([
         ApiService.getFavorites(),
         ApiService.getReviews(),
         ApiService.getKosts(),
       ]);
-
       final favs = results[0] as List;
       final reviews = results[1] as List;
       final kosts = results[2] as List;
-
       final session2 = await ApiService.getSession();
       final userId = session2?['user']?['id']?.toString() ?? session2?['id']?.toString() ?? '';
       final myReviews = reviews.where((r) => r['user_id']?.toString() == userId).toList();
-
       _totalFav = favs.length;
       _totalReview = myReviews.length;
       _totalKost = kosts.length;
@@ -86,29 +82,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
         color: AppColors.coral,
         child: CustomScrollView(
           slivers: [
-            // ── SliverAppBar gradient ──────────────────────────────
-            SliverAppBar(
-              expandedHeight: 160,
-              floating: false,
-              pinned: true,
-              automaticallyImplyLeading: false,
-              backgroundColor: AppColors.coral,
-              flexibleSpace: FlexibleSpaceBar(
-                background: Container(
-                  decoration: const BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [AppColors.coral, AppColors.coral2],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
+            SliverToBoxAdapter(
+              child: Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [AppColors.coral, AppColors.coral2],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
-                  child: SafeArea(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-                      child: Row(children: [
+                ),
+                child: SafeArea(
+                  bottom: false,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
                         CircleAvatar(
                           radius: 24,
-                          backgroundColor: Colors.white.withOpacity(0.3),
+                          backgroundColor: Colors.white.withValues(alpha: 0.3),
                           backgroundImage: _userPhotoUrl != null ? NetworkImage(_userPhotoUrl!) : null,
                           child: _userPhotoUrl == null
                               ? Text(Helpers.initials(_userName),
@@ -117,62 +109,59 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         ),
                         const SizedBox(width: 12),
                         Expanded(
-                          child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisAlignment: MainAxisAlignment.center, children: [
-                            Text('Halo, ${_userName.split(' ').first}! 👋',
-                                style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w700)),
-                            Text(_userEmail, style: const TextStyle(color: Colors.white70, fontSize: 12)),
-                          ]),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text('Halo, ${_userName.split(' ').first}!',
+                                  style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w700)),
+                              Text(_userEmail,
+                                  style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                            ],
+                          ),
                         ),
                         IconButton(
                           icon: const Icon(Icons.logout_rounded, color: Colors.white),
                           onPressed: _logout,
                         ),
-                      ]),
+                      ],
                     ),
                   ),
                 ),
-                title: const Text('Beranda', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Colors.white)),
-                titlePadding: const EdgeInsets.only(left: 20, bottom: 14),
               ),
             ),
 
             if (_isLoading)
-              const SliverFillRemaining(child: Center(child: CircularProgressIndicator(color: AppColors.coral)))
+              const SliverFillRemaining(
+                  child: Center(child: CircularProgressIndicator(color: AppColors.coral)))
             else
               SliverPadding(
                 padding: const EdgeInsets.all(16),
                 sliver: SliverList(
                   delegate: SliverChildListDelegate([
-                    // ── Stat Cards ──
                     Row(children: [
-                      _statCard('❤️', _totalFav.toString(), 'Favorit', AppColors.coral, AppColors.coralBg, card, border, textColor),
+                      Expanded(child: StatCard(icon: Icons.favorite_rounded, value: _totalFav.toString(), label: 'Favorit', accentColor: AppColors.coral, accentBg: AppColors.coralBg)),
                       const SizedBox(width: 10),
-                      _statCard('⭐', _totalReview.toString(), 'Ulasan Saya', AppColors.yellow, AppColors.yellowBg, card, border, textColor),
+                      Expanded(child: StatCard(icon: Icons.star_rounded, value: _totalReview.toString(), label: 'Ulasan Saya', accentColor: AppColors.yellow, accentBg: AppColors.yellowBg)),
                       const SizedBox(width: 10),
-                      _statCard('🏘️', _totalKost.toString(), 'Total Kost', AppColors.teal, AppColors.tealBg, card, border, textColor),
+                      Expanded(child: StatCard(icon: Icons.home_work_rounded, value: _totalKost.toString(), label: 'Total Kost', accentColor: AppColors.teal, accentBg: AppColors.tealBg)),
                     ]),
                     const SizedBox(height: 24),
-
-                    // ── Favorit Terbaru ──
-                    _sectionTitle('❤️ Favorit Terbaru', textColor),
+                    _sectionTitle('Favorit Terbaru', textColor),
                     const SizedBox(height: 10),
                     if (_recentFavs.isEmpty)
                       _emptyBox('Belum ada favorit', card, border, muted)
                     else
                       ..._recentFavs.map((f) => _favRow(f, card, border, muted, textColor)),
                     const SizedBox(height: 24),
-
-                    // ── Ulasan Saya ──
-                    _sectionTitle('⭐ Ulasan Saya Terbaru', textColor),
+                    _sectionTitle('Ulasan Saya Terbaru', textColor),
                     const SizedBox(height: 10),
                     if (_myReviews.isEmpty)
                       _emptyBox('Belum ada ulasan', card, border, muted)
                     else
                       ..._myReviews.map((r) => _reviewRow(r, card, border, muted, textColor)),
                     const SizedBox(height: 24),
-
-                    // ── Kost Tersedia ──
-                    _sectionTitle('🏘️ Kost Tersedia', textColor),
+                    _sectionTitle('Kost Tersedia', textColor),
                     const SizedBox(height: 10),
                     GridView.builder(
                       shrinkWrap: true,
@@ -193,64 +182,34 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _statCard(String emoji, String value, String label, Color color, Color bgColor, Color card, Color border, Color textColor) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: card,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: border),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 8)],
-        ),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(color: bgColor, borderRadius: BorderRadius.circular(10)),
-            child: Text(emoji, style: const TextStyle(fontSize: 18)),
-          ),
-          const SizedBox(height: 10),
-          Text(value, style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: textColor)),
-          const SizedBox(height: 2),
-          Text(label, style: const TextStyle(fontSize: 10, color: AppColors.mutedLight, fontWeight: FontWeight.w600)),
-        ]),
-      ),
-    );
-  }
+  Widget _sectionTitle(String title, Color textColor) =>
+      Text(title, style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: textColor));
 
-  Widget _sectionTitle(String title, Color textColor) {
-    return Text(title, style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: textColor));
-  }
-
-  Widget _emptyBox(String msg, Color card, Color border, Color muted) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      margin: const EdgeInsets.only(bottom: 8),
-      alignment: Alignment.center,
-      decoration: BoxDecoration(color: card, borderRadius: BorderRadius.circular(12), border: Border.all(color: border)),
-      child: Text(msg, style: TextStyle(color: muted, fontSize: 13)),
-    );
-  }
+  Widget _emptyBox(String msg, Color card, Color border, Color muted) =>
+      Container(
+        padding: const EdgeInsets.all(16), margin: const EdgeInsets.only(bottom: 8),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(color: card, borderRadius: BorderRadius.circular(12), border: Border.all(color: border)),
+        child: Text(msg, style: TextStyle(color: muted, fontSize: 13)),
+      );
 
   Widget _favRow(dynamic f, Color card, Color border, Color muted, Color textColor) {
     final foto = f['kost_foto'] ?? f['foto'];
     final fotoUrl = foto != null ? ApiService.getImageUrl(foto.toString()) : null;
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
+      margin: const EdgeInsets.only(bottom: 8), padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(color: card, borderRadius: BorderRadius.circular(12), border: Border.all(color: border)),
       child: Row(children: [
         ClipRRect(
           borderRadius: BorderRadius.circular(8),
           child: (fotoUrl != null && fotoUrl.isNotEmpty && !fotoUrl.contains('default'))
-              ? Image.network(fotoUrl, width: 44, height: 44, fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => _iconBox())
+              ? Image.network(fotoUrl, width: 44, height: 44, fit: BoxFit.cover, errorBuilder: (_, __, ___) => _iconBox())
               : _iconBox(),
         ),
         const SizedBox(width: 12),
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(f['kost_nama'] ?? '-', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: textColor), maxLines: 1, overflow: TextOverflow.ellipsis),
-          Text('📍 ${f['kost_alamat'] ?? '-'}', style: TextStyle(fontSize: 11, color: muted), maxLines: 1, overflow: TextOverflow.ellipsis),
+          Text(f['kost_alamat'] ?? '-', style: TextStyle(fontSize: 11, color: muted), maxLines: 1, overflow: TextOverflow.ellipsis),
         ])),
         Text(Helpers.formatRupiah(f['kost_harga'] ?? 0),
             style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.coral)),
@@ -261,20 +220,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget _reviewRow(dynamic r, Color card, Color border, Color muted, Color textColor) {
     final rating = (r['rating'] ?? 0) as int;
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
+      margin: const EdgeInsets.only(bottom: 8), padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(color: card, borderRadius: BorderRadius.circular(12), border: Border.all(color: border)),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-          Expanded(
-            child: Text(r['kost_name'] ?? '-',
-                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: textColor),
-                maxLines: 1, overflow: TextOverflow.ellipsis),
-          ),
-          Row(children: List.generate(5, (i) => Icon(
-            i < rating ? Icons.star_rounded : Icons.star_outline_rounded,
-            size: 13, color: i < rating ? AppColors.yellow : muted,
-          ))),
+          Expanded(child: Text(r['kost_name'] ?? '-', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: textColor), maxLines: 1, overflow: TextOverflow.ellipsis)),
+          Row(children: List.generate(5, (i) => Icon(i < rating ? Icons.star_rounded : Icons.star_outline_rounded, size: 13, color: i < rating ? AppColors.yellow : muted))),
         ]),
         const SizedBox(height: 4),
         Text('"${r['komentar'] ?? ''}"', style: TextStyle(fontSize: 12, color: muted), maxLines: 2, overflow: TextOverflow.ellipsis),
@@ -291,20 +242,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ClipRRect(
           borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
           child: (fotoUrl != null && fotoUrl.isNotEmpty && !fotoUrl.contains('default'))
-              ? Image.network(fotoUrl, height: 90, width: double.infinity, fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => _photoPlaceholder())
+              ? Image.network(fotoUrl, height: 90, width: double.infinity, fit: BoxFit.cover, errorBuilder: (_, __, ___) => _photoPlaceholder())
               : _photoPlaceholder(),
         ),
-        Padding(
-          padding: const EdgeInsets.all(10),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(k['nama_kost'] ?? '-', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: textColor), maxLines: 1, overflow: TextOverflow.ellipsis),
-            Text('📍 ${k['alamat_kost'] ?? '-'}', style: TextStyle(fontSize: 10, color: muted), maxLines: 1, overflow: TextOverflow.ellipsis),
-            const SizedBox(height: 4),
-            Text(Helpers.formatRupiah(k['harga_kost'] ?? 0),
-                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: AppColors.coral)),
-          ]),
-        ),
+        Padding(padding: const EdgeInsets.all(10), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(k['nama_kost'] ?? '-', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: textColor), maxLines: 1, overflow: TextOverflow.ellipsis),
+          Text(k['alamat_kost'] ?? '-', style: TextStyle(fontSize: 10, color: muted), maxLines: 1, overflow: TextOverflow.ellipsis),
+          const SizedBox(height: 4),
+          Text(Helpers.formatRupiah(k['harga_kost'] ?? 0), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: AppColors.coral)),
+        ])),
       ]),
     );
   }

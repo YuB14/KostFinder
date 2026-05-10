@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../../widgets/shared_widgets.dart';
+import '../../../widgets/shared_app_bar.dart';
 import '../../theme/app_theme.dart';
 import '../../services/api_service.dart';
 
@@ -26,7 +28,6 @@ class _ReviewScreenState extends State<ReviewScreen> {
     try {
       final session = await ApiService.getSession();
       _userId = session?['user']?['id']?.toString() ?? session?['id']?.toString() ?? '';
-
       final results = await Future.wait([ApiService.getReviews(), ApiService.getKosts()]);
       final allReviews = results[0] as List;
       _kosts = results[1] as List;
@@ -70,8 +71,6 @@ class _ReviewScreenState extends State<ReviewScreen> {
                   IconButton(onPressed: () => Navigator.pop(ctx), icon: Icon(Icons.close_rounded, color: muted)),
                 ]),
                 const SizedBox(height: 20),
-
-                // Pilih kost (hanya saat tambah)
                 Text('Kost', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: muted)),
                 const SizedBox(height: 6),
                 Container(
@@ -94,21 +93,16 @@ class _ReviewScreenState extends State<ReviewScreen> {
                   ),
                 ),
                 const SizedBox(height: 14),
-
-                // Rating
                 Text('Rating', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: muted)),
                 const SizedBox(height: 6),
                 Row(children: List.generate(5, (i) => GestureDetector(
                   onTap: () => setSheet(() => tempStars = i + 1),
                   child: Padding(
                     padding: const EdgeInsets.only(right: 8),
-                    child: Icon(i < tempStars ? Icons.star_rounded : Icons.star_outline_rounded,
-                        size: 30, color: i < tempStars ? AppColors.yellow : muted),
+                    child: Icon(i < tempStars ? Icons.star_rounded : Icons.star_outline_rounded, size: 30, color: i < tempStars ? AppColors.yellow : muted),
                   ),
                 ))),
                 const SizedBox(height: 14),
-
-                // Komentar
                 Text('Komentar', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: muted)),
                 const SizedBox(height: 6),
                 TextFormField(
@@ -119,8 +113,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
                   decoration: InputDecoration(
                     hintText: 'Tulis ulasanmu di sini...',
                     hintStyle: TextStyle(fontSize: 13, color: muted),
-                    filled: true,
-                    fillColor: bg2,
+                    filled: true, fillColor: bg2,
                     contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: border)),
                     enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: border)),
@@ -128,7 +121,6 @@ class _ReviewScreenState extends State<ReviewScreen> {
                   ),
                 ),
                 const SizedBox(height: 20),
-
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
@@ -161,9 +153,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
     );
   }
 
-  void _showSnack(String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
-  }
+  void _showSnack(String msg) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
 
   @override
   Widget build(BuildContext context) {
@@ -171,80 +161,74 @@ class _ReviewScreenState extends State<ReviewScreen> {
     final textColor = isDark ? AppColors.textDark : AppColors.textLight;
     final muted = isDark ? AppColors.mutedDark : AppColors.mutedLight;
 
-    return Scaffold(
-      body: CustomScrollView(
-        slivers: [
-          SliverAppBar(
-            expandedHeight: 120,
-            floating: false,
-            pinned: true,
-            automaticallyImplyLeading: false,
-            backgroundColor: AppColors.coral,
-            actions: [
-              Padding(
-                padding: const EdgeInsets.only(right: 16),
-                child: TextButton.icon(
-                  onPressed: () => _showFormSheet(),
-                  icon: const Icon(Icons.add_rounded, color: Colors.white, size: 18),
-                  label: const Text('Tambah', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
-                ),
-              ),
-            ],
-            flexibleSpace: FlexibleSpaceBar(
-              background: Container(
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(colors: [AppColors.coral, AppColors.coral2], begin: Alignment.topLeft, end: Alignment.bottomRight),
-                ),
-                child: SafeArea(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-                    child: Row(children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(12)),
-                        child: const Icon(Icons.rate_review_rounded, color: Colors.white, size: 22),
-                      ),
-                      const SizedBox(width: 12),
-                      const Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        Text('Ulasan Saya ⭐', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: Colors.white)),
-                        Text('Kelola ulasanmu untuk kost', style: TextStyle(fontSize: 11, color: Colors.white70)),
-                      ]),
-                    ]),
-                  ),
-                ),
-              ),
-              title: const Text('Ulasan Saya', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Colors.white)),
-              titlePadding: const EdgeInsets.only(left: 20, bottom: 14),
-            ),
-          ),
+    final totalReview = _myReviews.length.toString();
+    final approved = _myReviews.where((r) => r['status'] == 'Disetujui').length.toString();
+    final pending = _myReviews.where((r) => r['status'] == 'Menunggu').length.toString();
 
-          if (_isLoading)
-            const SliverFillRemaining(child: Center(child: CircularProgressIndicator(color: AppColors.coral)))
-          else if (_myReviews.isEmpty)
-            SliverFillRemaining(
-              child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                const Text('⭐', style: TextStyle(fontSize: 56)),
-                const SizedBox(height: 12),
-                Text('Belum ada ulasan', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: textColor)),
-                const SizedBox(height: 8),
-                Text('Tap "+ Tambah" untuk menulis ulasan kost', style: TextStyle(color: muted, fontSize: 13)),
-              ]),
-            )
-          else
-            SliverPadding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
-              sliver: SliverList(
-                delegate: SliverChildBuilderDelegate(
-                  (_, i) => Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: _ReviewCard(review: _myReviews[i], isDark: isDark, onEdit: () => _showFormSheet(review: _myReviews[i])),
-                  ),
-                  childCount: _myReviews.length,
-                ),
-              ),
-            ),
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: isDark ? AppColors.cardDark : Colors.white,
+        elevation: 0,
+        surfaceTintColor: Colors.transparent,
+        automaticallyImplyLeading: false,
+        title: Row(children: [
+          Container(padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(color: AppColors.coralBg, borderRadius: BorderRadius.circular(8)),
+            child: const Icon(Icons.rate_review_rounded, color: AppColors.coral, size: 18)),
+          const SizedBox(width: 10),
+          Text('Ulasan Saya', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: textColor, letterSpacing: -0.5)),
+        ]),
+        actions: [
+          TextButton.icon(
+            onPressed: () => _showFormSheet(),
+            icon: const Icon(Icons.add_rounded, color: AppColors.coral, size: 18),
+            label: const Text('Tambah', style: TextStyle(color: AppColors.coral, fontWeight: FontWeight.w700)),
+          ),
+          const SizedBox(width: 8),
         ],
       ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator(color: AppColors.coral))
+          : RefreshIndicator(
+              color: AppColors.coral,
+              onRefresh: _loadData,
+              child: ListView(
+                padding: const EdgeInsets.all(16),
+                children: [
+                  PageHeader(title: 'Ulasan ', italic: 'Saya', subtitle: 'Kelola ulasanmu untuk kost yang pernah ditinggali.'),
+                  const SizedBox(height: 16),
+                  Row(children: [
+                    Expanded(child: StatCard(icon: Icons.rate_review_rounded, value: totalReview, label: 'Total Ulasan', accentColor: AppColors.coral, accentBg: AppColors.coralBg)),
+                    const SizedBox(width: 10),
+                    Expanded(child: StatCard(icon: Icons.check_circle_rounded, value: approved, label: 'Disetujui', accentColor: AppColors.teal, accentBg: AppColors.tealBg)),
+                    const SizedBox(width: 10),
+                    Expanded(child: StatCard(icon: Icons.hourglass_top_rounded, value: pending, label: 'Menunggu', accentColor: AppColors.yellow, accentBg: AppColors.yellowBg)),
+                  ]),
+                  const SizedBox(height: 20),
+                  Text('Daftar Ulasan', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: textColor)),
+                  const SizedBox(height: 12),
+                  if (_myReviews.isEmpty)
+                    Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(40),
+                        child: Column(children: [
+                          const Text('⭐', style: TextStyle(fontSize: 56)),
+                          const SizedBox(height: 12),
+                          Text('Belum ada ulasan', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: textColor)),
+                          const SizedBox(height: 8),
+                          Text('Tap "+ Tambah" untuk menulis ulasan kost', style: TextStyle(color: muted, fontSize: 13)),
+                        ]),
+                      ),
+                    )
+                  else
+                    ..._myReviews.map((r) => Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: _ReviewCard(review: r, isDark: isDark, onEdit: () => _showFormSheet(review: r)),
+                    )),
+                  const SizedBox(height: 80),
+                ],
+              ),
+            ),
     );
   }
 }
@@ -269,20 +253,11 @@ class _ReviewCard extends StatelessWidget {
     final String komentar = review['komentar'] ?? '';
     final String createdAt = review['created_at'] ?? '-';
 
-    Color statusColor;
-    Color statusBg;
-    switch (status) {
-      case 'Disetujui': statusColor = AppColors.teal; statusBg = AppColors.tealBg; break;
-      case 'Ditolak': statusColor = const Color(0xFFE53E3E); statusBg = const Color(0x1AE53E3E); break;
-      default: statusColor = AppColors.yellow; statusBg = AppColors.yellowBg; break;
-    }
-
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(color: card, borderRadius: BorderRadius.circular(14), border: Border.all(color: border),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8)]),
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8)]),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        // Header
         Row(children: [
           Expanded(child: Text(kostName, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: textColor), maxLines: 1, overflow: TextOverflow.ellipsis)),
           Row(children: List.generate(5, (i) => Icon(
@@ -298,13 +273,8 @@ class _ReviewCard extends StatelessWidget {
         Row(children: [
           Text(createdAt, style: TextStyle(fontSize: 11, color: muted)),
           const SizedBox(width: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-            decoration: BoxDecoration(color: statusBg, borderRadius: BorderRadius.circular(100)),
-            child: Text(status, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: statusColor)),
-          ),
+          _statusBadge(status),
           const Spacer(),
-          // Hanya bisa edit jika masih Menunggu
           if (status == 'Menunggu')
             GestureDetector(
               onTap: onEdit,
@@ -317,5 +287,13 @@ class _ReviewCard extends StatelessWidget {
         ]),
       ]),
     );
+  }
+
+  Widget _statusBadge(String status) {
+    switch (status) {
+      case 'Disetujui': return PillBadge.green('Disetujui');
+      case 'Ditolak': return const PillBadge(text: 'Ditolak', color: Color(0xFFE53E3E), bgColor: Color(0x1AE53E3E));
+      default: return PillBadge.yellow('Menunggu');
+    }
   }
 }

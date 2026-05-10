@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../services/prediksi_service.dart';
 import '../../services/favorite_service.dart';
+import '../../theme/app_theme.dart';
 import '../../utils/helpers.dart';
 
 class PrediksiScreen extends StatefulWidget {
@@ -81,10 +82,22 @@ class _PrediksiScreenState extends State<PrediksiScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bg       = isDark ? AppColors.bgDark     : AppColors.bgLight;
+    final card     = isDark ? AppColors.cardDark   : AppColors.cardLight;
+    final bg2      = isDark ? AppColors.bg2Dark    : AppColors.bg2Light;
+    final border   = isDark ? AppColors.borderDark : AppColors.borderLight;
+    final muted    = isDark ? AppColors.mutedDark  : AppColors.mutedLight;
+    final textColor = isDark ? AppColors.textDark  : AppColors.textLight;
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: bg,
       appBar: AppBar(
-        title: const Text('Prediksi Kost 🤖', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18)),
+        backgroundColor: isDark ? AppColors.cardDark : AppColors.cardLight,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        title: Text('Prediksi Kost',
+            style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18, color: textColor)),
       ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
@@ -95,7 +108,8 @@ class _PrediksiScreenState extends State<PrediksiScreen> {
               padding: const EdgeInsets.all(14),
               margin: const EdgeInsets.only(bottom: 16),
               decoration: BoxDecoration(
-                gradient: const LinearGradient(colors: [Color(0xFFE8430D), Color(0xFFFF6B3D)]),
+                gradient: const LinearGradient(
+                    colors: [AppColors.coral, AppColors.coral2]),
                 borderRadius: BorderRadius.circular(14),
               ),
               child: Row(
@@ -111,61 +125,88 @@ class _PrediksiScreenState extends State<PrediksiScreen> {
           // Form Card
           Container(
             padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8)]),
+            decoration: BoxDecoration(
+              color: card,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: border),
+              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8)],
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('🎯 Input Preferensi', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800)),
+                Text('Input Preferensi',
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: textColor)),
                 const SizedBox(height: 16),
 
                 // Harga Max
-                const Text('Anggaran Maksimal (Rp/bulan)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF6B7E94))),
+                Text('Anggaran Maksimal (Rp/bulan)',
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: muted)),
                 const SizedBox(height: 6),
                 TextField(
                   controller: _hargaMaxCtrl,
                   keyboardType: TextInputType.number,
-                  style: const TextStyle(fontSize: 13),
+                  style: TextStyle(fontSize: 13, color: textColor),
                   onChanged: (v) {
                     final formatted = _fmtInput(v);
-                    _hargaMaxCtrl.value = TextEditingValue(text: formatted, selection: TextSelection.collapsed(offset: formatted.length));
+                    _hargaMaxCtrl.value = TextEditingValue(
+                        text: formatted,
+                        selection: TextSelection.collapsed(offset: formatted.length));
                   },
                   decoration: InputDecoration(
                     hintText: '1.000.000',
+                    hintStyle: TextStyle(color: muted),
                     prefixText: 'Rp ',
+                    prefixStyle: TextStyle(color: textColor),
                     filled: true,
-                    fillColor: const Color(0xFFF5F7FA),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
-                    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFFE2E8F0))),
+                    fillColor: bg2,
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                    enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: border)),
+                    focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: const BorderSide(color: AppColors.coral)),
                     contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                   ),
                 ),
                 const SizedBox(height: 12),
 
                 // Harga Min
-                const Text('Anggaran Minimal (opsional)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF6B7E94))),
+                Text('Anggaran Minimal (opsional)',
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: muted)),
                 const SizedBox(height: 6),
                 TextField(
                   controller: _hargaMinCtrl,
                   keyboardType: TextInputType.number,
-                  style: const TextStyle(fontSize: 13),
+                  style: TextStyle(fontSize: 13, color: textColor),
                   onChanged: (v) {
                     final formatted = _fmtInput(v);
-                    _hargaMinCtrl.value = TextEditingValue(text: formatted, selection: TextSelection.collapsed(offset: formatted.length));
+                    _hargaMinCtrl.value = TextEditingValue(
+                        text: formatted,
+                        selection: TextSelection.collapsed(offset: formatted.length));
                   },
                   decoration: InputDecoration(
                     hintText: '0',
+                    hintStyle: TextStyle(color: muted),
                     prefixText: 'Rp ',
+                    prefixStyle: TextStyle(color: textColor),
                     filled: true,
-                    fillColor: const Color(0xFFF5F7FA),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
-                    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFFE2E8F0))),
+                    fillColor: bg2,
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                    enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: border)),
+                    focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: const BorderSide(color: AppColors.coral)),
                     contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                   ),
                 ),
                 const SizedBox(height: 14),
 
                 // Kelas
-                const Text('Kelas Kost', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF6B7E94))),
+                Text('Kelas Kost',
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: muted)),
                 const SizedBox(height: 8),
                 Wrap(
                   spacing: 8, runSpacing: 8,
@@ -178,11 +219,15 @@ class _PrediksiScreenState extends State<PrediksiScreen> {
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                         decoration: BoxDecoration(
-                          color: selected ? const Color(0xFFE8430D) : const Color(0xFFF5F7FA),
+                          color: selected ? AppColors.coral : bg2,
                           borderRadius: BorderRadius.circular(100),
-                          border: Border.all(color: selected ? const Color(0xFFE8430D) : const Color(0xFFE2E8F0)),
+                          border: Border.all(color: selected ? AppColors.coral : border),
                         ),
-                        child: Text(label, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: selected ? Colors.white : const Color(0xFF6B7E94))),
+                        child: Text(label,
+                            style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: selected ? Colors.white : muted)),
                       ),
                     );
                   }),
@@ -190,7 +235,8 @@ class _PrediksiScreenState extends State<PrediksiScreen> {
                 const SizedBox(height: 14),
 
                 // Fasilitas
-                const Text('Fasilitas Diinginkan', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF6B7E94))),
+                Text('Fasilitas Diinginkan',
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: muted)),
                 const SizedBox(height: 8),
                 Wrap(
                   spacing: 8, runSpacing: 8,
@@ -204,21 +250,29 @@ class _PrediksiScreenState extends State<PrediksiScreen> {
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                         decoration: BoxDecoration(
-                          color: sel ? const Color(0xFFE8430D).withOpacity(0.1) : const Color(0xFFF5F7FA),
+                          color: sel ? AppColors.coralBg : bg2,
                           borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: sel ? const Color(0xFFE8430D) : const Color(0xFFE2E8F0)),
+                          border: Border.all(color: sel ? AppColors.coral : border),
                         ),
-                        child: Text(f, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: sel ? const Color(0xFFE8430D) : const Color(0xFF6B7E94))),
+                        child: Text(f,
+                            style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: sel ? AppColors.coral : muted)),
                       ),
                     );
                   }).toList(),
                 ),
+
                 if (_error.isNotEmpty) ...[
                   const SizedBox(height: 10),
                   Container(
                     padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(color: const Color(0xFFE53E3E).withOpacity(0.08), borderRadius: BorderRadius.circular(8)),
-                    child: Text(_error, style: const TextStyle(color: Color(0xFFE53E3E), fontSize: 12)),
+                    decoration: BoxDecoration(
+                        color: const Color(0xFFE53E3E).withOpacity(0.08),
+                        borderRadius: BorderRadius.circular(8)),
+                    child: Text(_error,
+                        style: const TextStyle(color: Color(0xFFE53E3E), fontSize: 12)),
                   ),
                 ],
                 const SizedBox(height: 16),
@@ -227,28 +281,33 @@ class _PrediksiScreenState extends State<PrediksiScreen> {
                   child: ElevatedButton(
                     onPressed: _loading ? null : _predict,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFE8430D),
+                      backgroundColor: AppColors.coral,
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
                     ),
                     child: _loading
-                        ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                        : const Text('🤖 Prediksi Kost Untukku', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+                        ? const SizedBox(
+                            height: 18, width: 18,
+                            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                        : const Text('Prediksi Kost Untukku',
+                            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
                   ),
                 ),
               ],
             ),
           ),
 
-          // Hasil
+          // Hasil Prediksi
           if (_results.isNotEmpty) ...[
             const SizedBox(height: 20),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text('🎯 Hasil Prediksi', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800)),
-                Text('${_results.length} kost', style: const TextStyle(fontSize: 12, color: Color(0xFF6B7E94))),
+                Text('Hasil Prediksi',
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: textColor)),
+                Text('${_results.length} kost', style: TextStyle(fontSize: 12, color: muted)),
               ],
             ),
             const SizedBox(height: 12),
@@ -262,13 +321,14 @@ class _PrediksiScreenState extends State<PrediksiScreen> {
                 item: k,
                 isTop: i == 0,
                 persen: persen,
+                isDark: isDark,
                 onFav: () async {
                   final r = await FavoriteService.addFavorite(k.id);
                   if (!mounted) return;
                   final msg = r['status'] == 409
-                      ? 'Sudah ada di favorit ⚠️'
+                      ? 'Sudah ada di favorit'
                       : r['success'] == true
-                          ? 'Ditambahkan ke favorit! ❤️'
+                          ? 'Ditambahkan ke favorit'
                           : 'Gagal menambahkan';
                   ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
                 },
@@ -283,7 +343,8 @@ class _PrediksiScreenState extends State<PrediksiScreen> {
   Widget _statMini(String label, String value) {
     return Column(
       children: [
-        Text(value, style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w800)),
+        Text(value,
+            style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w800)),
         Text(label, style: const TextStyle(color: Colors.white70, fontSize: 10)),
       ],
     );
@@ -294,18 +355,31 @@ class _PrediksiCard extends StatelessWidget {
   final PrediksiModel item;
   final bool isTop;
   final int persen;
+  final bool isDark;
   final VoidCallback onFav;
 
-  const _PrediksiCard({required this.item, required this.isTop, required this.persen, required this.onFav});
+  const _PrediksiCard({
+    required this.item,
+    required this.isTop,
+    required this.persen,
+    required this.isDark,
+    required this.onFav,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final card   = isDark ? AppColors.cardDark  : AppColors.cardLight;
+    final bg2    = isDark ? AppColors.bg2Dark   : AppColors.bg2Light;
+    final border = isDark ? AppColors.borderDark : AppColors.borderLight;
+    final muted  = isDark ? AppColors.mutedDark  : AppColors.mutedLight;
+    final textColor = isDark ? AppColors.textDark : AppColors.textLight;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: card,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: isTop ? const Color(0xFFE8430D) : Colors.transparent, width: 2),
+        border: Border.all(color: isTop ? AppColors.coral : border, width: isTop ? 2 : 1),
         boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8)],
       ),
       child: Column(
@@ -315,10 +389,16 @@ class _PrediksiCard extends StatelessWidget {
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 6),
               decoration: const BoxDecoration(
-                color: Color(0xFFE8430D),
+                color: AppColors.coral,
                 borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
               ),
-              child: const Center(child: Text('🏆 PALING COCOK', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w800))),
+              child: const Center(
+                  child: Text('PALING COCOK',
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.5))),
             ),
           Padding(
             padding: const EdgeInsets.all(14),
@@ -331,22 +411,36 @@ class _PrediksiCard extends StatelessWidget {
                       ? CachedNetworkImage(
                           imageUrl: item.fotoKost!,
                           width: 80, height: 80, fit: BoxFit.cover,
-                          errorWidget: (_, __, ___) => Container(width: 80, height: 80, color: const Color(0xFFEAEFF5), child: const Icon(Icons.home_rounded, color: Color(0xFF6B7E94))),
+                          errorWidget: (_, __, ___) => Container(
+                              width: 80, height: 80, color: bg2,
+                              child: Icon(Icons.home_rounded, color: muted)),
                         )
-                      : Container(width: 80, height: 80, color: const Color(0xFFEAEFF5), child: const Icon(Icons.home_rounded, color: Color(0xFF6B7E94))),
+                      : Container(
+                          width: 80, height: 80, color: bg2,
+                          child: Icon(Icons.home_rounded, color: muted)),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(item.namaKost, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800), maxLines: 1, overflow: TextOverflow.ellipsis),
+                      Text(item.namaKost,
+                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: textColor),
+                          maxLines: 1, overflow: TextOverflow.ellipsis),
                       const SizedBox(height: 2),
-                      Text('📍 ${item.alamatKost}', style: const TextStyle(fontSize: 11, color: Color(0xFF6B7E94)), maxLines: 1, overflow: TextOverflow.ellipsis),
+                      Row(children: [
+                        Icon(Icons.location_on_rounded, size: 11, color: muted),
+                        const SizedBox(width: 3),
+                        Expanded(
+                            child: Text(item.alamatKost,
+                                style: TextStyle(fontSize: 11, color: muted),
+                                maxLines: 1, overflow: TextOverflow.ellipsis)),
+                      ]),
                       const SizedBox(height: 6),
-                      Text(Helpers.formatRupiah(item.hargaKost), style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: Color(0xFFE8430D))),
+                      Text(Helpers.formatRupiah(item.hargaKost),
+                          style: const TextStyle(
+                              fontSize: 14, fontWeight: FontWeight.w800, color: AppColors.coral)),
                       const SizedBox(height: 6),
-                      // Progress Bar
                       Row(
                         children: [
                           Expanded(
@@ -356,8 +450,12 @@ class _PrediksiCard extends StatelessWidget {
                                 Row(
                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
-                                    const Text('Kecocokan', style: TextStyle(fontSize: 10, color: Color(0xFF6B7E94))),
-                                    Text('$persen%', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Color(0xFFE8430D))),
+                                    Text('Kecocokan', style: TextStyle(fontSize: 10, color: muted)),
+                                    Text('$persen%',
+                                        style: const TextStyle(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w700,
+                                            color: AppColors.coral)),
                                   ],
                                 ),
                                 const SizedBox(height: 4),
@@ -365,8 +463,8 @@ class _PrediksiCard extends StatelessWidget {
                                   borderRadius: BorderRadius.circular(100),
                                   child: LinearProgressIndicator(
                                     value: persen / 100,
-                                    backgroundColor: const Color(0xFFEAEFF5),
-                                    color: const Color(0xFFE8430D),
+                                    backgroundColor: bg2,
+                                    color: AppColors.coral,
                                     minHeight: 5,
                                   ),
                                 ),
@@ -379,10 +477,11 @@ class _PrediksiCard extends StatelessWidget {
                             child: Container(
                               padding: const EdgeInsets.all(6),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFE8430D).withOpacity(0.1),
+                                color: AppColors.coralBg,
                                 borderRadius: BorderRadius.circular(8),
                               ),
-                              child: const Icon(Icons.favorite_rounded, color: Color(0xFFE8430D), size: 18),
+                              child: const Icon(Icons.favorite_rounded,
+                                  color: AppColors.coral, size: 18),
                             ),
                           ),
                         ],
