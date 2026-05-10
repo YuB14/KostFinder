@@ -88,8 +88,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final border = isDark ? AppColors.borderDark : AppColors.borderLight;
     final muted = isDark ? AppColors.mutedDark : AppColors.mutedLight;
     final textColor = isDark ? AppColors.textDark : AppColors.textLight;
-    final card = isDark ? AppColors.cardDark : AppColors.cardLight;
-    final border = isDark ? AppColors.borderDark : AppColors.borderLight;
 
     return Scaffold(
       body: RefreshIndicator(
@@ -99,51 +97,115 @@ class _DashboardScreenState extends State<DashboardScreen> {
           controller: _scrollCtrl,
           slivers: [
           SliverAppBar(
-            expandedHeight: 0,
+            expandedHeight: 100,
             floating: false,
             pinned: true,
             automaticallyImplyLeading: false,
-            backgroundColor: card,
+            backgroundColor: AppColors.coral,
             elevation: 0,
-            surfaceTintColor: Colors.transparent,
-            title: Row(children: [
-              Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(color: AppColors.coralBg, borderRadius: BorderRadius.circular(8)),
-                child: const Icon(Icons.home_work_rounded, color: AppColors.coral, size: 18),
-              ),
-              const SizedBox(width: 10),
-              Text('KostFinder', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: textColor, letterSpacing: -0.5)),
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(color: AppColors.coralBg, borderRadius: BorderRadius.circular(6)),
-                child: const Text('User', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: AppColors.coral)),
-              ),
-            ]),
-            bottom: PreferredSize(
-              preferredSize: const Size.fromHeight(1),
-              child: Divider(height: 1, thickness: 1, color: border),
+            title: AnimatedOpacity(
+              opacity: _scrolled ? 1.0 : 0.0,
+              duration: const Duration(milliseconds: 200),
+              child: Row(children: [
+                CircleAvatar(
+                  radius: 14,
+                  backgroundColor: Colors.white.withValues(alpha: 0.3),
+                  backgroundImage: _userPhotoUrl != null ? NetworkImage(_userPhotoUrl!) : null,
+                  child: _userPhotoUrl == null ? Text(Helpers.initials(_userName),
+                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 11)) : null,
+                ),
+                const SizedBox(width: 8),
+                Text('Halo, ${_userName.split(" ").first}!',
+                    style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w700)),
+              ]),
             ),
             actions: [
-              ValueListenableBuilder<ThemeMode>(
-                valueListenable: themeNotifier,
-                builder: (_, mode, __) {
-                  final isDarkMode = mode == ThemeMode.dark ||
-                      (mode == ThemeMode.system &&
-                          WidgetsBinding.instance.platformDispatcher.platformBrightness == Brightness.dark);
-                  return IconButton(
-                    icon: Icon(isDarkMode ? Icons.light_mode_rounded : Icons.dark_mode_rounded, size: 20, color: muted),
-                    onPressed: () => themeNotifier.value = isDarkMode ? ThemeMode.light : ThemeMode.dark,
-                  );
-                },
+              AnimatedOpacity(
+                opacity: _scrolled ? 1.0 : 0.0,
+                duration: const Duration(milliseconds: 200),
+                child: ValueListenableBuilder<ThemeMode>(
+                  valueListenable: themeNotifier,
+                  builder: (_, mode, __) {
+                    final isDarkMode = mode == ThemeMode.dark ||
+                        (mode == ThemeMode.system &&
+                            WidgetsBinding.instance.platformDispatcher.platformBrightness == Brightness.dark);
+                    return IconButton(
+                      icon: Icon(isDarkMode ? Icons.light_mode_rounded : Icons.dark_mode_rounded, size: 20, color: Colors.white),
+                      onPressed: () => themeNotifier.value = isDarkMode ? ThemeMode.light : ThemeMode.dark,
+                    );
+                  },
+                ),
               ),
-              IconButton(
-                icon: Icon(Icons.logout_rounded, color: muted, size: 20),
-                onPressed: _logout,
+              AnimatedOpacity(
+                opacity: _scrolled ? 1.0 : 0.0,
+                duration: const Duration(milliseconds: 200),
+                child: IconButton(
+                  icon: const Icon(Icons.logout_rounded, color: Colors.white),
+                  onPressed: _logout,
+                ),
               ),
-              const SizedBox(width: 4),
             ],
+            flexibleSpace: FlexibleSpaceBar(
+              collapseMode: CollapseMode.pin,
+              background: Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [AppColors.coral, AppColors.coral2],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                ),
+                child: SafeArea(
+                  bottom: false,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        CircleAvatar(
+                          radius: 24,
+                          backgroundColor: Colors.white.withValues(alpha: 0.3),
+                          backgroundImage: _userPhotoUrl != null ? NetworkImage(_userPhotoUrl!) : null,
+                          child: _userPhotoUrl == null
+                              ? Text(Helpers.initials(_userName),
+                                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 16))
+                              : null,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text('Halo, ${_userName.split(" ").first}!',
+                                  style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w700)),
+                              Text(_userEmail,
+                                  style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                            ],
+                          ),
+                        ),
+                        ValueListenableBuilder<ThemeMode>(
+                          valueListenable: themeNotifier,
+                          builder: (_, mode, __) {
+                            final isDarkMode = mode == ThemeMode.dark ||
+                                (mode == ThemeMode.system &&
+                                    WidgetsBinding.instance.platformDispatcher.platformBrightness == Brightness.dark);
+                            return IconButton(
+                              icon: Icon(isDarkMode ? Icons.light_mode_rounded : Icons.dark_mode_rounded, size: 20, color: Colors.white),
+                              onPressed: () => themeNotifier.value = isDarkMode ? ThemeMode.light : ThemeMode.dark,
+                            );
+                          },
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.logout_rounded, color: Colors.white),
+                          onPressed: _logout,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
           ),
 
                         if (_isLoading)
