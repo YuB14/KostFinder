@@ -60,14 +60,14 @@ class _AuthWrapperState extends State<AuthWrapper> {
   }
 
   Future<void> _checkSession() async {
-  // TEMP: bypass login untuk testing
-  if (mounted) {
-    setState(() {
-      _loggedIn = true;
-      _checking = false;
-    });
+    final session = await ApiService.getSession();
+    if (mounted) {
+      setState(() {
+        _loggedIn = session != null;
+        _checking = false;
+      });
+    }
   }
-}
 
   @override
   Widget build(BuildContext context) {
