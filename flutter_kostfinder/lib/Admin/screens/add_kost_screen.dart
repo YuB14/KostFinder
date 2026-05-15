@@ -59,6 +59,26 @@ class _AddKostScreenState extends State<AddKostScreen> {
             );
       }
     }
+    
+    _hargaCtrl.addListener(_updateKelasFromHarga);
+  }
+
+  void _updateKelasFromHarga() {
+    final text = _hargaCtrl.text.replaceAll('.', '');
+    final harga = int.tryParse(text) ?? 0;
+    
+    String newKelas = 'Standar';
+    if (harga < 500000) {
+      newKelas = 'Ekonomi';
+    } else if (harga >= 1000000) {
+      newKelas = 'Premium';
+    }
+    
+    if (_selectedKelas != newKelas) {
+      setState(() {
+        _selectedKelas = newKelas;
+      });
+    }
   }
 
   Future<void> _pickImages() async {
@@ -81,6 +101,7 @@ class _AddKostScreenState extends State<AddKostScreen> {
 
   @override
   void dispose() {
+    _hargaCtrl.removeListener(_updateKelasFromHarga);
     _namaCtrl.dispose();
     _alamatCtrl.dispose();
     _hargaCtrl.dispose();
@@ -346,10 +367,10 @@ class _AddKostScreenState extends State<AddKostScreen> {
                         ),
                         const SizedBox(height: 14),
                         _SelectableCardRow(
-                          label: 'Kelas Kamar',
+                          label: 'Kelas Kamar (Terisi Otomatis)',
                           value: _selectedKelas,
                           items: _kelasList,
-                          onChanged: (v) => setState(() => _selectedKelas = v),
+                          onChanged: null, // Disabled
                           isDark: isDark, card: card, border: border,
                           textColor: textColor, muted: muted,
                         ),
@@ -377,7 +398,7 @@ class _AddKostScreenState extends State<AddKostScreen> {
                         const SizedBox(height: 14),
                         _FormField(
                           controller: _deskripsiCtrl,
-                          label: 'Deskripsi Kost',
+                          label: 'Deskripsi Kost (Opsional)',
                           hint: 'Ceritakan keunggulan kost ini...',
                           icon: Icons.description_rounded,
                           isDark: isDark, card: card, border: border,
@@ -722,13 +743,13 @@ class _FormField extends StatelessWidget {
 class _SelectableCardRow extends StatelessWidget {
   final String label, value;
   final List<String> items;
-  final ValueChanged<String> onChanged;
+  final ValueChanged<String>? onChanged;
   final bool isDark;
   final Color card, border, textColor, muted;
 
   const _SelectableCardRow({
     required this.label, required this.value, required this.items,
-    required this.onChanged, required this.isDark, required this.card,
+    this.onChanged, required this.isDark, required this.card,
     required this.border, required this.textColor, required this.muted,
   });
 
@@ -740,26 +761,30 @@ class _SelectableCardRow extends StatelessWidget {
       Row(
         children: items.map((item) {
           final isSelected = value == item;
+          final isDisabled = onChanged == null;
           return Expanded(
             child: GestureDetector(
-              onTap: () => onChanged(item),
-              child: Container(
-                margin: EdgeInsets.only(right: item == items.last ? 0 : 8),
-                padding: const EdgeInsets.symmetric(vertical: 10),
-                decoration: BoxDecoration(
-                  color: isSelected ? AppColors.tealBg : (isDark ? AppColors.bg2Dark : AppColors.bg2Light),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                    color: isSelected ? AppColors.teal : border,
-                    width: isSelected ? 1.5 : 1,
+              onTap: isDisabled ? null : () => onChanged!(item),
+              child: Opacity(
+                opacity: isDisabled ? 0.6 : 1.0,
+                child: Container(
+                  margin: EdgeInsets.only(right: item == items.last ? 0 : 8),
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  decoration: BoxDecoration(
+                    color: isSelected ? AppColors.tealBg : (isDark ? AppColors.bg2Dark : AppColors.bg2Light),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: isSelected ? AppColors.teal : border,
+                      width: isSelected ? 1.5 : 1,
+                    ),
                   ),
+                  alignment: Alignment.center,
+                  child: Text(item, style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                    color: isSelected ? AppColors.teal : muted,
+                  )),
                 ),
-                alignment: Alignment.center,
-                child: Text(item, style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-                  color: isSelected ? AppColors.teal : muted,
-                )),
               ),
             ),
           );

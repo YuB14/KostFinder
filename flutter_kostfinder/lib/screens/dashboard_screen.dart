@@ -113,7 +113,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final textColor = isDark ? AppColors.textDark : AppColors.textLight;
 
     return Scaffold(
-      appBar: const SharedAppBar(),
+      appBar: SharedAppBar(
+        onNotificationPressed: (btnContext) => _showActivitiesPopup(btnContext, isDark, card, border, muted, textColor),
+      ),
       body: _isLoading 
         ? const Center(child: CircularProgressIndicator(color: AppColors.coral))
         : RefreshIndicator(
@@ -187,38 +189,63 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     child: _DynamicPopularKostRow(kost: k, isDark: isDark, card: card, border: border, muted: muted, textColor: textColor),
                   )),
 
-                const SizedBox(height: 24),
 
-                // ── Aktivitas Terbaru ─────────────────────────────────
+              ],
+            ),
+          ),
+    );
+  }
+
+  void _showActivitiesPopup(BuildContext btnContext, bool isDark, Color card, Color border, Color muted, Color textColor) {
+    final RenderBox button = btnContext.findRenderObject() as RenderBox;
+    final RenderBox overlay = Navigator.of(context).overlay!.context.findRenderObject() as RenderBox;
+    final RelativeRect position = RelativeRect.fromRect(
+      Rect.fromPoints(
+        button.localToGlobal(Offset(0, button.size.height + 8), ancestor: overlay),
+        button.localToGlobal(button.size.bottomRight(const Offset(0, 8)), ancestor: overlay),
+      ),
+      Offset.zero & overlay.size,
+    );
+
+    showMenu(
+      context: context,
+      position: position,
+      color: card,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide(color: border)),
+      elevation: 4,
+      constraints: const BoxConstraints(maxWidth: 340),
+      items: [
+        PopupMenuItem(
+          enabled: false,
+          padding: EdgeInsets.zero,
+          child: Container(
+            width: 340,
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
                 Text('Aktivitas Terbaru', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: textColor)),
                 const SizedBox(height: 12),
-
                 if (_activitiesDynamic.isEmpty)
-                  Center(child: Padding(padding: const EdgeInsets.all(16), child: Text('Belum ada aktivitas terbaru', style: TextStyle(color: muted, fontSize: 13))))
+                  Center(child: Padding(padding: const EdgeInsets.symmetric(vertical: 20), child: Text('Belum ada aktivitas terbaru', style: TextStyle(color: muted, fontSize: 13))))
                 else
                   Container(
-                    decoration: BoxDecoration(color: card, borderRadius: BorderRadius.circular(14), border: Border.all(color: border)),
+                    decoration: BoxDecoration(color: isDark ? AppColors.bg2Dark : Colors.white, borderRadius: BorderRadius.circular(14), border: Border.all(color: border)),
                     child: Column(
                       children: _activitiesDynamic.asMap().entries.map((e) {
                         final i = e.key; final a = e.value;
-                        
-                        // Parse backend color string to actual color
                         Color bgCol = AppColors.tealBg;
                         Color iconCol = AppColors.teal;
                         IconData icn = Icons.info_outline;
-                        
                         final bgStr = a['bg']?.toString() ?? 'teal';
                         if (bgStr == 'coral') { bgCol = AppColors.coralBg; iconCol = AppColors.coral; }
                         else if (bgStr == 'yellow') { bgCol = AppColors.yellowBg; iconCol = AppColors.yellow; }
                         else if (bgStr == 'blue') { bgCol = AppColors.blueBg; iconCol = AppColors.blue; }
-                        
                         final iconStr = a['icon']?.toString() ?? '';
-                        if (iconStr == '🏘️') {
-                          icn = Icons.home_work_rounded;
-                        } else if (iconStr == '👤') icn = Icons.person_add_rounded;
+                        if (iconStr == '🏘️') { icn = Icons.home_work_rounded; }
+                        else if (iconStr == '👤') icn = Icons.person_add_rounded;
                         else if (iconStr == '⭐') icn = Icons.star_rounded;
                         else if (iconStr == '❤️') icn = Icons.favorite_rounded;
-
                         return Container(
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                           decoration: BoxDecoration(
@@ -238,10 +265,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       }).toList(),
                     ),
                   ),
-                const SizedBox(height: 20),
               ],
             ),
           ),
+        ),
+      ],
     );
   }
 

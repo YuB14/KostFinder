@@ -15,11 +15,35 @@ class FavoriteScreen extends StatefulWidget {
 class _FavoriteScreenState extends State<FavoriteScreen> {
   bool _isLoading = true;
   List<_FavData> _favs = [];
+  List<_FavData> _filteredFavs = [];
+  final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     _loadFavorites();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _filterFavs(String query) {
+    if (query.isEmpty) {
+      setState(() {
+        _filteredFavs = List.from(_favs);
+      });
+    } else {
+      final lowerQuery = query.toLowerCase();
+      setState(() {
+        _filteredFavs = _favs.where((f) {
+          return f.name.toLowerCase().contains(lowerQuery) ||
+                 f.location.toLowerCase().contains(lowerQuery);
+        }).toList();
+      });
+    }
   }
 
   Future<void> _loadFavorites() async {
@@ -45,6 +69,7 @@ class _FavoriteScreenState extends State<FavoriteScreen> {
               isFav: true,
             );
           }).toList();
+          _filterFavs(_searchController.text);
         });
       }
     } catch (e) {
@@ -55,23 +80,33 @@ class _FavoriteScreenState extends State<FavoriteScreen> {
   }
 
   void _toggleFav(int i) async {
-    final fav = _favs[i];
-    if (fav.isFav) {
-      setState(() => _favs[i] = _favs[i].copyWith(isFav: false));
-      try {
-        await ApiService.deleteFavorite(fav.id);
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text('💔  ${fav.name} dihapus dari favorit'),
-            backgroundColor: AppColors.mutedLight,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            duration: const Duration(seconds: 2),
-          ));
-        }
-      } catch (e) {
-        setState(() => _favs[i] = _favs[i].copyWith(isFav: true));
+    final fav = _filteredFavs[i];
+    if (!fav.isFav) return;
+
+    final oldFavs = List<_FavData>.from(_favs);
+    final oldFiltered = List<_FavData>.from(_filteredFavs);
+    
+    setState(() {
+      _favs.removeWhere((f) => f.id == fav.id);
+      _filteredFavs.removeAt(i);
+    });
+    
+    try {
+      await ApiService.deleteFavorite(fav.id);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('💔  ${fav.name} dihapus dari favorit'),
+          backgroundColor: AppColors.mutedLight,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          duration: const Duration(seconds: 2),
+        ));
       }
+    } catch (e) {
+      if (mounted) setState(() {
+        _favs = oldFavs;
+        _filteredFavs = oldFiltered;
+      });
     }
   }
 
@@ -107,15 +142,53 @@ class _FavoriteScreenState extends State<FavoriteScreen> {
 
           Text('Daftar Kost Favorit', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: isDark ? AppColors.textDark : AppColors.textLight)),
           const SizedBox(height: 12),
+          
+          TextField(
+            controller: _searchController,
+            onChanged: _filterFavs,
+            style: TextStyle(color: isDark ? AppColors.textDark : AppColors.textLight),
+            decoration: InputDecoration(
+              hintText: 'Cari nama atau lokasi kost...',
+              hintStyle: TextStyle(color: isDark ? AppColors.mutedDark : AppColors.mutedLight),
+              prefixIcon: Icon(Icons.search, color: isDark ? AppColors.mutedDark : AppColors.mutedLight),
+              filled: true,
+              fillColor: isDark ? AppColors.cardDark : AppColors.cardLight,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: isDark ? AppColors.borderDark : AppColors.borderLight),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: isDark ? AppColors.borderDark : AppColors.borderLight),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: AppColors.coral),
+              ),
+              contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
+            ),
+          ),
+          const SizedBox(height: 16),
 
           if (_isLoading)
             const Padding(padding: EdgeInsets.all(40), child: Center(child: CircularProgressIndicator(color: AppColors.coral)))
+          else if (_filteredFavs.isEmpty && _favs.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.all(40),
+              child: Center(
+                child: Text(
+                  'Tidak ada kost favorit yang cocok dengan pencarian.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: isDark ? AppColors.mutedDark : AppColors.mutedLight),
+                ),
+              ),
+            )
           else
             GridView.count(
               crossAxisCount: 2, crossAxisSpacing: 12, mainAxisSpacing: 12,
               shrinkWrap: true, physics: const NeverScrollableScrollPhysics(),
               childAspectRatio: 0.78,
-              children: _favs.asMap().entries.map((e) => _FavCard(
+              children: _filteredFavs.asMap().entries.map((e) => _FavCard(
                 data: e.value,
                 isDark: isDark,
                 onToggle: () => _toggleFav(e.key),
@@ -213,7 +286,7 @@ class _FavCard extends StatelessWidget {
           bgColor: isDark ? AppColors.bg2Dark : AppColors.bg2Light,
         );
       case 'green':
-      default: return PillBadge.green(text);
+      default: return PillBadge.teal(text);
     }
   }
 }

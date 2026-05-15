@@ -17,11 +17,14 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
   bool _isAdmin = false;
+  String? _totalKostBadge;
+  String? _totalUserBadge;
 
   @override
   void initState() {
     super.initState();
     _loadRole();
+    _loadBadges();
   }
 
   Future<void> _loadRole() async {
@@ -34,22 +37,41 @@ class _MainScreenState extends State<MainScreen> {
     }
   }
 
-  final _screens = const [
-    DashboardScreen(),
-    KostScreen(),
-    ReviewScreen(),
-    FavoriteScreen(),
-    PredictionScreen(),
-    UserScreen(),
+  Future<void> _loadBadges() async {
+    try {
+      final statsRes = await ApiService.getDashboardStats().timeout(const Duration(seconds: 10));
+      if (statsRes['success'] == true) {
+        final stats = statsRes['data'];
+        if (mounted) {
+          setState(() {
+            _totalKostBadge = stats['total_kost']?.toString();
+            _totalUserBadge = stats['total_user']?.toString();
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('Error loading badges: $e');
+    }
+  }
+
+  List<Widget> get _screens => [
+    DashboardScreen(
+      onNavigateKost: () => setState(() => _currentIndex = 1),
+    ),
+    const KostScreen(),
+    const ReviewScreen(),
+    const FavoriteScreen(),
+    const PredictionScreen(),
+    const UserScreen(),
   ];
 
-  static const _leftTabs = [
-    _Tab(icon: Icons.grid_view_rounded, label: 'Beranda', screenIdx: 0),
-    _Tab(icon: Icons.home_work_rounded, label: 'Kost', screenIdx: 1, badge: '6'),
+  List<_Tab> get _leftTabs => [
+    const _Tab(icon: Icons.grid_view_rounded, label: 'Beranda', screenIdx: 0),
+    _Tab(icon: Icons.home_work_rounded, label: 'Kost', screenIdx: 1, badge: _totalKostBadge),
   ];
   List<_Tab> get _rightTabs => [
     const _Tab(icon: Icons.favorite_rounded, label: 'Favorit', screenIdx: 3),
-    if (_isAdmin) const _Tab(icon: Icons.people_rounded, label: 'Pengguna', screenIdx: 5, badge: '12'),
+    if (_isAdmin) _Tab(icon: Icons.people_rounded, label: 'Pengguna', screenIdx: 5, badge: _totalUserBadge),
   ];
 
   @override
@@ -97,24 +119,30 @@ class _MainScreenState extends State<MainScreen> {
 
   Widget _buildReviewItem(Color muted) {
     final active = _currentIndex == 2;
-    return GestureDetector(
-      onTap: () => setState(() => _currentIndex = 2),
-      behavior: HitTestBehavior.opaque,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-        decoration: BoxDecoration(
-          color: active ? AppColors.coralBg : Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.rate_review_rounded, size: 22, color: active ? AppColors.coral : muted),
-            const SizedBox(height: 2),
-            Text('Review', style: TextStyle(fontSize: 9, fontWeight: active ? FontWeight.w700 : FontWeight.w500, color: active ? AppColors.coral : muted, height: 1.0)),
-          ],
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => setState(() => _currentIndex = 2),
+        behavior: HitTestBehavior.opaque,
+        child: Container(
+          color: Colors.transparent,
+          alignment: Alignment.center,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: active ? AppColors.coralBg : Colors.transparent,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.rate_review_rounded, size: 22, color: active ? AppColors.coral : muted),
+                const SizedBox(height: 2),
+                Text('Review', style: TextStyle(fontSize: 9, fontWeight: active ? FontWeight.w700 : FontWeight.w500, color: active ? AppColors.coral : muted, height: 1.0)),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -122,35 +150,41 @@ class _MainScreenState extends State<MainScreen> {
 
   Widget _buildItem(_Tab tab, Color muted) {
     final active = _currentIndex == tab.screenIdx;
-    return GestureDetector(
-      onTap: () => setState(() => _currentIndex = tab.screenIdx),
-      behavior: HitTestBehavior.opaque,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-        decoration: BoxDecoration(
-          color: active ? AppColors.coralBg : Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Stack(clipBehavior: Clip.none, children: [
-              Icon(tab.icon, size: 22, color: active ? AppColors.coral : muted),
-              if (tab.badge != null)
-                Positioned(
-                  top: -4, right: -8,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                    decoration: BoxDecoration(color: active ? AppColors.coral : muted, borderRadius: BorderRadius.circular(100)),
-                    child: Text(tab.badge!, style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: Colors.white)),
-                  ),
-                ),
-            ]),
-            const SizedBox(height: 2),
-            Text(tab.label, style: TextStyle(fontSize: 9, fontWeight: active ? FontWeight.w700 : FontWeight.w500, color: active ? AppColors.coral : muted, height: 1.0)),
-          ],
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => setState(() => _currentIndex = tab.screenIdx),
+        behavior: HitTestBehavior.opaque,
+        child: Container(
+          color: Colors.transparent,
+          alignment: Alignment.center,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: active ? AppColors.coralBg : Colors.transparent,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Stack(clipBehavior: Clip.none, children: [
+                  Icon(tab.icon, size: 22, color: active ? AppColors.coral : muted),
+                  if (tab.badge != null)
+                    Positioned(
+                      top: -4, right: -8,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                        decoration: BoxDecoration(color: active ? AppColors.coral : muted, borderRadius: BorderRadius.circular(100)),
+                        child: Text(tab.badge!, style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: Colors.white)),
+                      ),
+                    ),
+                ]),
+                const SizedBox(height: 2),
+                Text(tab.label, style: TextStyle(fontSize: 9, fontWeight: active ? FontWeight.w700 : FontWeight.w500, color: active ? AppColors.coral : muted, height: 1.0)),
+              ],
+            ),
+          ),
         ),
       ),
     );

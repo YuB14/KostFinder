@@ -1,3 +1,5 @@
+import '../../config/api_config.dart';
+
 class FavoriteModel {
   final String id;
   final String userId;
@@ -39,11 +41,18 @@ class FavoriteModel {
       kostHarga: (json['kost_harga'] ?? 0).toDouble(),
       kostKelas: json['kost_kelas'] ?? '',
       kostStatus: json['kost_status'] ?? '',
-      kostFoto: json['kost_foto'],
+      kostFoto: _buildImageUrl(json['kost_foto']),
       kostFasilitas: json['kost_fasilitas'] ?? '',
       pillClass: json['pill_class'] ?? 'green',
       favCount: json['fav_count'] ?? 0,
       createdAt: json['created_at'] ?? '-',
     );
+  }
+
+  static String? _buildImageUrl(dynamic path) {
+    if (path == null || path.toString().isEmpty) return null;
+    final str = path.toString();
+    if (str.startsWith('http')) return str;
+    return '${ApiConfig.baseUrl}/storage/$str';
   }
 }

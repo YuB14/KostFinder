@@ -2,13 +2,93 @@ import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import 'kost_screen.dart';
 
-class KostDetailScreen extends StatelessWidget {
+import '../services/api_service.dart';
+
+class KostDetailScreen extends StatefulWidget {
   final KostData kost;
 
   const KostDetailScreen({super.key, required this.kost});
 
   @override
+  State<KostDetailScreen> createState() => _KostDetailScreenState();
+}
+
+class _KostDetailScreenState extends State<KostDetailScreen> {
+  bool _isFav = false;
+  String? _favId;
+  String _userId = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _checkFavoriteStatus();
+  }
+
+  Future<void> _checkFavoriteStatus() async {
+    try {
+      final session = await ApiService.getSession();
+      if (session != null) {
+        final user = session['user'] ?? session;
+        _userId = user['id']?.toString() ?? '';
+      }
+
+      if (_userId.isNotEmpty) {
+        final res = await ApiService.getFavorites();
+        for (var f in res) {
+          if (f['kost_id']?.toString() == widget.kost.id) {
+            if (mounted) {
+              setState(() {
+                _isFav = true;
+                _favId = f['id']?.toString();
+              });
+            }
+            break;
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('Error checking fav: $e');
+    }
+  }
+
+  Future<void> _toggleFav() async {
+    if (_userId.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Silakan login terlebih dahulu')));
+      return;
+    }
+
+    if (_isFav && _favId != null && _favId != 'temp') {
+      final oldFavId = _favId;
+      setState(() { _isFav = false; _favId = null; });
+      try {
+        await ApiService.deleteFavorite(oldFavId!);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('💔 ${widget.kost.name} dihapus dari favorit'), duration: const Duration(seconds: 1)));
+        }
+      } catch (e) {
+        if (mounted) setState(() { _isFav = true; _favId = oldFavId; });
+      }
+    } else if (!_isFav) {
+      setState(() { _isFav = true; _favId = 'temp'; });
+      try {
+        final res = await ApiService.addFavorite(userId: _userId, kostId: widget.kost.id);
+        if (res['success'] == true) {
+          if (mounted) {
+            setState(() { _favId = res['data']['id']?.toString(); });
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('❤️ ${widget.kost.name} ditambahkan ke favorit'), duration: const Duration(seconds: 1)));
+          }
+        } else {
+          if (mounted) setState(() { _isFav = false; _favId = null; });
+        }
+      } catch (e) {
+        if (mounted) setState(() { _isFav = false; _favId = null; });
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final kost = widget.kost;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bg = isDark ? AppColors.bgDark : AppColors.bgLight;
     final card = isDark ? AppColors.cardDark : AppColors.cardLight;
@@ -50,8 +130,11 @@ class KostDetailScreen extends StatelessWidget {
             ),
             actions: [
               IconButton(
-                icon: const Icon(Icons.favorite_border_rounded, color: Colors.white),
-                onPressed: () {},
+                icon: Icon(
+                  _isFav ? Icons.favorite_rounded : Icons.favorite_border_rounded, 
+                  color: _isFav ? AppColors.coral : Colors.white,
+                ),
+                onPressed: _toggleFav,
               ),
               IconButton(
                 icon: const Icon(Icons.share_rounded, color: Colors.white),

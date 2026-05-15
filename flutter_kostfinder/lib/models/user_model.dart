@@ -1,3 +1,5 @@
+import '../config/api_config.dart';
+
 class UserModel {
   final String id;
   final String name;
@@ -19,7 +21,7 @@ class UserModel {
       name: json['name'] ?? '',
       email: json['email'] ?? '',
       role: json['role'] ?? 'user',
-      photo: json['photo'],
+      photo: _buildImageUrl(json['photo']),
     );
   }
 
@@ -29,5 +31,12 @@ class UserModel {
       return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
     }
     return name.isNotEmpty ? name[0].toUpperCase() : 'U';
+  }
+
+  static String? _buildImageUrl(dynamic path) {
+    if (path == null || path.toString().isEmpty) return null;
+    final str = path.toString();
+    if (str.startsWith('http')) return str;
+    return '${ApiConfig.baseUrl}/storage/$str';
   }
 }

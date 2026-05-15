@@ -19,6 +19,8 @@ class _KostScreenState extends State<KostScreen> {
   bool _isLoading = true;
   List<KostData> _kosts = [];
   bool _isAdmin = false;
+  String _userId = '';
+  Map<String, String> _favoriteMap = {}; // kost_id -> fav_id
 
   List<KostData> get _filtered => _kosts.where((k) =>
     k.name.toLowerCase().contains(_search.toLowerCase()) ||
@@ -32,7 +34,69 @@ class _KostScreenState extends State<KostScreen> {
   }
 
   Future<void> _loadData() async {
-    await Future.wait([_loadRole(), _loadKosts()]);
+    await Future.wait([_loadRole(), _loadKosts(), _loadFavorites()]);
+  }
+
+  Future<void> _loadFavorites() async {
+    try {
+      final res = await ApiService.getFavorites();
+      final Map<String, String> newMap = {};
+      for (var f in res) {
+        final kId = f['kost_id']?.toString();
+        final fId = f['id']?.toString();
+        if (kId != null && fId != null) {
+          newMap[kId] = fId;
+        }
+      }
+      if (mounted) {
+        setState(() {
+          _favoriteMap = newMap;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error favs: $e');
+    }
+  }
+
+  Future<void> _toggleFav(KostData k) async {
+    if (_userId.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Silakan login terlebih dahulu')));
+      return;
+    }
+
+    final isFav = _favoriteMap.containsKey(k.id);
+    final favId = _favoriteMap[k.id];
+
+    if (isFav && favId != null && favId != 'temp') {
+      // Optimistic delete
+      setState(() => _favoriteMap.remove(k.id));
+      try {
+        await ApiService.deleteFavorite(favId);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('💔 ${k.name} dihapus dari favorit'), duration: const Duration(seconds: 1)));
+        }
+      } catch (e) {
+        if (mounted) setState(() => _favoriteMap[k.id] = favId); // revert
+      }
+    } else if (!isFav) {
+      // Optimistic add
+      setState(() => _favoriteMap[k.id] = 'temp');
+      try {
+        final res = await ApiService.addFavorite(userId: _userId, kostId: k.id);
+        if (res['success'] == true) {
+          if (mounted) {
+            setState(() {
+              _favoriteMap[k.id] = res['data']['id']?.toString() ?? 'temp';
+            });
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('❤️ ${k.name} ditambahkan ke favorit'), duration: const Duration(seconds: 1)));
+          }
+        } else {
+          if (mounted) setState(() => _favoriteMap.remove(k.id)); // revert
+        }
+      } catch (e) {
+        if (mounted) setState(() => _favoriteMap.remove(k.id)); // revert
+      }
+    }
   }
 
   Future<void> _loadKosts() async {
@@ -52,22 +116,31 @@ class _KostScreenState extends State<KostScreen> {
   }
 
   KostData _parseKost(Map<String, dynamic> k) {
-    final kelas = k['kelas']?.toString() ?? 'Standar';
+    String kelasStr = k['kelas_label']?.toString() ?? k['kelas']?.toString() ?? '';
+    String kelas = 'Standar';
+    if (kelasStr == '1' || kelasStr.toLowerCase() == 'ekonomi' || kelasStr.toLowerCase() == 'ekonomis') kelas = 'Ekonomi';
+    else if (kelasStr == '2' || kelasStr.toLowerCase() == 'standar') kelas = 'Standar';
+    else if (kelasStr == '3' || kelasStr.toLowerCase() == 'premium') kelas = 'Premium';
+
+    String jenisKostStr = k['jenis_kost_label']?.toString() ?? k['tipe_kos_label']?.toString() ?? k['jenis_kost']?.toString() ?? k['tipe_kos']?.toString() ?? '';
+    String jenisKost = 'Bebas';
+    if (jenisKostStr == '1' || jenisKostStr.toLowerCase() == 'pria') jenisKost = 'Pria';
+    else if (jenisKostStr == '2' || jenisKostStr.toLowerCase() == 'wanita') jenisKost = 'Wanita';
+    else if (jenisKostStr == '3' || jenisKostStr.toLowerCase() == 'bebas' || jenisKostStr.toLowerCase() == 'campur') jenisKost = 'Bebas';
+
     Color iconColor = AppColors.teal;
     IconData icon = Icons.home_work_rounded;
     String tierType = 'teal';
-    String tier = 'Populer';
+    String tier = kelas;
 
-    if (kelas == 'Ekonomis') {
+    if (kelas == 'Ekonomi') {
       iconColor = AppColors.coral;
       icon = Icons.home_rounded;
       tierType = 'coral';
-      tier = 'Tersedia';
     } else if (kelas == 'Premium') {
       iconColor = AppColors.yellow;
       icon = Icons.apartment_rounded;
       tierType = 'yellow';
-      tier = 'Premium';
     }
 
     String formatCurrency(dynamic h) => 'Rp ${h ?? 0}';
@@ -103,6 +176,7 @@ class _KostScreenState extends State<KostScreen> {
     final session = await ApiService.getSession();
     if (session != null) {
       final user = session['user'] ?? session;
+      if (mounted) setState(() => _userId = user['id']?.toString() ?? '');
       if (user['role'] == 'admin') {
         if (mounted) setState(() => _isAdmin = true);
       }

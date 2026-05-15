@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiService {
-  static const String baseUrl = 'http://10.10.174.186:8000/api';
+  static const String baseUrl = 'http://10.10.186.165:8000/api';
 
   // HEADER
   static Future<Map<String, String>> _headers() async {
@@ -142,6 +142,31 @@ class ApiService {
     return jsonDecode(res.body);
   }
 
+  static String _mapKelas(String kelas) {
+    if (kelas == '0' || kelas == '1' || kelas == '2') return kelas;
+    switch (kelas.toLowerCase()) {
+      case 'ekonomi': return '0';
+      case 'premium': return '2';
+      default: return '1'; // standar
+    }
+  }
+
+  static String _mapJenisKost(String jenis) {
+    if (jenis == '1' || jenis == '2' || jenis == '3') return jenis;
+    switch (jenis.toLowerCase()) {
+      case 'pria': return '1';
+      case 'wanita': return '2';
+      default: return '3'; // bebas / campur
+    }
+  }
+
+  static String _mapStatus(String status) {
+    if (status == '0' || status == '1') return status;
+    final s = status.toLowerCase();
+    if (s == 'penuh' || s == 'tidak aktif') return '0';
+    return '1'; // default aktif
+  }
+
   static Future<Map<String, dynamic>> addKost({
     required String namaKost,
     required String alamatKost,
@@ -163,13 +188,22 @@ class ApiService {
 
     request.fields['nama_kost'] = namaKost;
     request.fields['alamat_kost'] = alamatKost;
-    request.fields['kelas'] = kelas;
-    request.fields['jenis_kost'] = jenisKost;
-    request.fields['status'] = status;
+    request.fields['kelas'] = _mapKelas(kelas);
+    request.fields['jenis_kost'] = _mapJenisKost(jenisKost);
+    request.fields['tipe_kos'] = _mapJenisKost(jenisKost);
+    request.fields['status'] = _mapStatus(status);
     request.fields['fasilitas'] = fasilitas;
     request.fields['harga_kost'] = hargaKost;
     request.fields['nomor_telepon'] = nomorTelepon;
     request.fields['deskripsi'] = deskripsi;
+
+    final String fasLow = fasilitas.toLowerCase();
+    request.fields['wifi'] = fasLow.contains('wifi') ? '1' : '0';
+    request.fields['ac'] = fasLow.contains('ac') ? '1' : '0';
+    request.fields['kamar_mandi_dalam'] = (fasLow.contains('kamar mandi dalam') || fasLow.contains('kamar mandi')) ? '1' : '0';
+    request.fields['parkir_motor'] = (fasLow.contains('parkir') || fasLow.contains('motor')) ? '1' : '0';
+    request.fields['laundry'] = fasLow.contains('laundry') ? '1' : '0';
+    request.fields['listrik'] = fasLow.contains('listrik') ? '1' : '0';
 
     if (fotoPaths.isNotEmpty) {
       request.files.add(
@@ -180,16 +214,8 @@ class ApiService {
       );
     }
 
-    print("FIELDS POST: ${request.fields}");
-    print("FILES POST: ${request.files.map((e) => e.filename).toList()}");
-
     final response = await request.send();
-
     final body = await response.stream.bytesToString();
-
-    print("STATUS POST: ${response.statusCode}");
-    print("BODY POST: $body");
-
     return jsonDecode(body);
   }
 
@@ -216,13 +242,24 @@ class ApiService {
       request.fields.addAll({
         'nama_kost': namaKost,
         'alamat_kost': alamatKost,
-        'kelas': kelas,
-        'jenis_kost': jenisKost,
-        'status': status,
+        'kelas': _mapKelas(kelas),
+        'jenis_kost': _mapJenisKost(jenisKost),
+        'tipe_kos': _mapJenisKost(jenisKost),
+        'status': _mapStatus(status),
         'fasilitas': fasilitas,
         'harga_kost': hargaKost,
         'nomor_telepon': nomorTelepon,
         'deskripsi': deskripsi,
+      });
+
+      final String fasLow = fasilitas.toLowerCase();
+      request.fields.addAll({
+        'wifi': fasLow.contains('wifi') ? '1' : '0',
+        'ac': fasLow.contains('ac') ? '1' : '0',
+        'kamar_mandi_dalam': (fasLow.contains('kamar mandi dalam') || fasLow.contains('kamar mandi')) ? '1' : '0',
+        'parkir_motor': (fasLow.contains('parkir') || fasLow.contains('motor')) ? '1' : '0',
+        'laundry': fasLow.contains('laundry') ? '1' : '0',
+        'listrik': fasLow.contains('listrik') ? '1' : '0',
       });
 
       if (fotoPaths.isNotEmpty) {
@@ -234,39 +271,15 @@ class ApiService {
         );
       }
 
-      final streamedResponse = await request.send().timeout(
-        const Duration(seconds: 20),
-      );
-
+      final streamedResponse = await request.send().timeout(const Duration(seconds: 20));
       final responseBody = await streamedResponse.stream.bytesToString();
-
-      print("STATUS POST: ${streamedResponse.statusCode}");
-      print("BODY POST: $responseBody");
-
-      if (responseBody.isEmpty) {
-        return {
-          'success': false,
-          'message': 'Response kosong dari server',
-        };
-      }
+      if (responseBody.isEmpty) return {'success': false, 'message': 'Response kosong'};
 
       final decoded = jsonDecode(responseBody);
-
-      if (streamedResponse.statusCode >= 200 &&
-          streamedResponse.statusCode < 300) {
-        return decoded;
-      }
-
-      return {
-        'success': false,
-        'message': decoded['message'] ?? 'Gagal menambahkan kost',
-        'status_code': streamedResponse.statusCode,
-      };
+      if (streamedResponse.statusCode >= 200 && streamedResponse.statusCode < 300) return decoded;
+      return {'success': false, 'message': decoded['message'] ?? 'Gagal menambahkan kost', 'status_code': streamedResponse.statusCode};
     } catch (e) {
-      return {
-        'success': false,
-        'message': 'Terjadi error: $e',
-      };
+      return {'success': false, 'message': 'Terjadi error: $e'};
     }
   }
 
@@ -295,13 +308,24 @@ class ApiService {
         '_method': 'PUT',
         'nama_kost': namaKost,
         'alamat_kost': alamatKost,
-        'kelas': kelas,
-        'jenis_kost': jenisKost,
-        'status': status,
+        'kelas': _mapKelas(kelas),
+        'jenis_kost': _mapJenisKost(jenisKost),
+        'tipe_kos': _mapJenisKost(jenisKost),
+        'status': _mapStatus(status),
         'fasilitas': fasilitas,
         'harga_kost': hargaKost,
         'nomor_telepon': nomorTelepon,
         'deskripsi': deskripsi,
+      });
+
+      final String fasLow = fasilitas.toLowerCase();
+      request.fields.addAll({
+        'wifi': fasLow.contains('wifi') ? '1' : '0',
+        'ac': fasLow.contains('ac') ? '1' : '0',
+        'kamar_mandi_dalam': (fasLow.contains('kamar mandi dalam') || fasLow.contains('kamar mandi')) ? '1' : '0',
+        'parkir_motor': (fasLow.contains('parkir') || fasLow.contains('motor')) ? '1' : '0',
+        'laundry': fasLow.contains('laundry') ? '1' : '0',
+        'listrik': fasLow.contains('listrik') ? '1' : '0',
       });
 
       if (fotoPaths.isNotEmpty) {
@@ -313,30 +337,22 @@ class ApiService {
         );
       }
 
-      final res = await request.send().timeout(
-        const Duration(seconds: 20),
-      );
-
+      final res = await request.send().timeout(const Duration(seconds: 20));
       final body = await res.stream.bytesToString();
-
-      print("STATUS UPDATE: ${res.statusCode}");
-      print("BODY UPDATE: $body");
-
-      if (body.isEmpty) {
-        return {
-          'success': false,
-          'message': 'Response kosong dari server',
-        };
-      }
-
+      if (body.isEmpty) return {'success': false, 'message': 'Response kosong'};
       return jsonDecode(body);
     } catch (e) {
-      return {
-        'success': false,
-        'message': 'Terjadi error: $e',
-      };
+      return {'success': false, 'message': 'Terjadi error: $e'};
     }
   }
+
+  static Future<void> deleteKost(String id) async {
+    await http.delete(
+      Uri.parse('$baseUrl/kost/$id'),
+      headers: await _headers(),
+    );
+  }
+
   // ================= FAVORITE =================
 
   static Future<List<dynamic>> getFavorites() async {

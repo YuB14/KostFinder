@@ -267,10 +267,8 @@ class _LoginScreenState extends State<LoginScreen>
                         ),
                       ),
 
-                      // FIX: Gunakan IntrinsicHeight + ConstrainedBox agar kedua tab
-                      // bisa scroll secara konsisten tanpa Spacer() overflow
-                      ConstrainedBox(
-                        constraints: const BoxConstraints(minHeight: 480),
+                      SizedBox(
+                        height: 580, // Bounded height agar TabBarView tidak error layout
                         child: TabBarView(
                           controller: _tabController,
                           children: [

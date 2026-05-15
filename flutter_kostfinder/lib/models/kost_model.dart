@@ -5,6 +5,8 @@
 ///   status    : 0=Penuh, 1=Tersedia, 2+=sisa kamar
 ///   kode_lokasi: 1–10 (lihat [kodeLokasLabel])
 ///   fasilitas : listrik, ac, kamar_mandi_dalam, parkir_motor, laundry, wifi (0/1)
+import '../../config/api_config.dart';
+
 class KostModel {
   final String id;
   final String namaKost;
@@ -76,7 +78,7 @@ class KostModel {
     return KostModel(
       id: json['id']?.toString() ?? '',
       namaKost: json['nama_kost']?.toString() ?? '',
-      fotoKost: json['foto_kost'] as String?,
+      fotoKost: _buildImageUrl(json['foto_kost']),
       alamatKost: json['alamat_kost']?.toString() ?? '',
       hargaKost: _toDouble(json['harga_kost']),
       luasKamar: _toDouble(json['luas_kamar']),
@@ -162,6 +164,13 @@ class KostModel {
   }
 
   // ── Helpers ────────────────────────────────────────────────────────
+
+  static String? _buildImageUrl(dynamic path) {
+    if (path == null || path.toString().isEmpty) return null;
+    final str = path.toString();
+    if (str.startsWith('http')) return str;
+    return '${ApiConfig.baseUrl}/storage/$str';
+  }
 
   static double _toDouble(dynamic v) {
     if (v == null) return 0.0;

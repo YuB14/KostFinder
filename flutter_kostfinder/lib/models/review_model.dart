@@ -1,3 +1,5 @@
+import '../../config/api_config.dart';
+
 class ReviewModel {
   final String id;
   final String userId;
@@ -38,9 +40,16 @@ class ReviewModel {
       userName: json['user_name'] ?? 'Pengguna',
       userInitials: json['user_initials'] ?? 'U',
       userColor: json['user_color'] ?? 'linear-gradient(135deg,#E8430D,#FF6B3D)',
-      userPhoto: json['user_photo'],
+      userPhoto: _buildImageUrl(json['user_photo']),
       kostName: json['kost_name'] ?? '-',
       createdAt: json['created_at'] ?? '-',
     );
+  }
+
+  static String? _buildImageUrl(dynamic path) {
+    if (path == null || path.toString().isEmpty) return null;
+    final str = path.toString();
+    if (str.startsWith('http')) return str;
+    return '${ApiConfig.baseUrl}/storage/$str';
   }
 }

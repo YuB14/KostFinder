@@ -3,6 +3,7 @@ import '../theme/app_theme.dart';
 import '../../widgets/shared_widgets.dart';
 import 'add_kost_screen.dart';
 import 'kost_detail_screen.dart';
+import 'package:intl/intl.dart';
 import '../services/api_service.dart';
 import '../../widgets/shared_app_bar.dart';
 
@@ -52,30 +53,55 @@ class _KostScreenState extends State<KostScreen> {
   }
 
   KostData _parseKost(Map<String, dynamic> k) {
-    final kelas = k['kelas']?.toString() ?? 'Standar';
+    final rawHarga = k['harga_kost'] ?? k['harga'];
+    final harga = double.tryParse(rawHarga?.toString() ?? '0') ?? 0.0;
+    
+    String kelas = 'Standar';
+    if (harga <= 700000) {
+      kelas = 'Ekonomi';
+    } else if (harga <= 1200000) {
+      kelas = 'Standar';
+    } else {
+      kelas = 'Premium';
+    }
+    String jenisKostStr = k['jenis_kost_label']?.toString() ?? k['tipe_kos_label']?.toString() ?? k['jenis_kost']?.toString() ?? k['tipe_kos']?.toString() ?? '';
+    String jenisKost = 'Bebas';
+    if (jenisKostStr == '1' || jenisKostStr.toLowerCase() == 'pria') jenisKost = 'Pria';
+    else if (jenisKostStr == '2' || jenisKostStr.toLowerCase() == 'wanita') jenisKost = 'Wanita';
+    else if (jenisKostStr == '3' || jenisKostStr.toLowerCase() == 'bebas' || jenisKostStr.toLowerCase() == 'campur') jenisKost = 'Bebas';
+
     Color iconColor = AppColors.teal;
     IconData icon = Icons.home_work_rounded;
     String tierType = 'teal';
-    String tier = 'Populer';
+    String tier = kelas;
 
-    if (kelas == 'Ekonomis') {
+    if (kelas == 'Ekonomi') {
       iconColor = AppColors.coral;
       icon = Icons.home_rounded;
       tierType = 'coral';
-      tier = 'Tersedia';
     } else if (kelas == 'Premium') {
       iconColor = AppColors.yellow;
       icon = Icons.apartment_rounded;
       tierType = 'yellow';
-      tier = 'Premium';
     }
 
-    String formatCurrency(dynamic h) => 'Rp ${h ?? 0}';
-    final fasList = (k['fasilitas']?.toString() ?? '')
-        .split(',')
-        .map((e) => e.trim())
-        .where((e) => e.isNotEmpty)
-        .toList();
+    String formatCurrency(dynamic h) {
+      final numValue = double.tryParse(h?.toString() ?? '0') ?? 0;
+      return NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0).format(numValue);
+    }
+    
+    final List<String> fasList = [];
+    final rawFas = k['fasilitas']?.toString() ?? '';
+    if (rawFas.isNotEmpty) {
+      fasList.addAll(rawFas.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty));
+    } else {
+      if (k['wifi'] == 1 || k['wifi'] == '1') fasList.add('WiFi');
+      if (k['ac'] == 1 || k['ac'] == '1') fasList.add('AC');
+      if (k['kamar_mandi_dalam'] == 1 || k['kamar_mandi_dalam'] == '1') fasList.add('Kamar Mandi Dalam');
+      if (k['parkir_motor'] == 1 || k['parkir_motor'] == '1') fasList.add('Parkir Motor');
+      if (k['laundry'] == 1 || k['laundry'] == '1') fasList.add('Laundry');
+      if (k['listrik'] == 1 || k['listrik'] == '1') fasList.add('Listrik');
+    }
 
     return KostData(
       iconData: icon,
@@ -89,7 +115,7 @@ class _KostScreenState extends State<KostScreen> {
       reviews: k['reviews_count']?.toString() ?? '0',
       tags: fasList,
       ownerNumber: k['nomor_telepon'] ?? '-',
-      type: k['jenis_kost'] ?? 'Bebas',
+      type: jenisKost,
       roomClass: kelas,
       description: k['deskripsi'] ?? 'Kosong',
       facilities: fasList,
@@ -107,6 +133,43 @@ class _KostScreenState extends State<KostScreen> {
         if (mounted) setState(() => _isAdmin = true);
       }
     }
+  }
+
+  void _deleteKost(String id, String name) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Hapus Kost'),
+        content: Text('Yakin ingin menghapus kost $name?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Batal')),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              setState(() => _isLoading = true);
+              try {
+                await ApiService.deleteKost(id);
+                await _loadKosts();
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                  content: Text('Kost $name berhasil dihapus'),
+                  backgroundColor: AppColors.teal,
+                ));
+              } catch (e) {
+                if (!mounted) return;
+                setState(() => _isLoading = false);
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                  content: Text('Gagal menghapus kost: $e'),
+                  backgroundColor: AppColors.coral,
+                ));
+              }
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.coral),
+            child: const Text('Hapus', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -176,13 +239,14 @@ class _KostScreenState extends State<KostScreen> {
             GridView.count(
               crossAxisCount: 2, crossAxisSpacing: 12, mainAxisSpacing: 12,
               shrinkWrap: true, physics: const NeverScrollableScrollPhysics(),
-              childAspectRatio: 0.68,
+              childAspectRatio: 0.65,
               children: _filtered.map((k) => _KostGridCard(
                 kost: k,
                 isDark: isDark, card: card, border: border,
                 muted: muted, textColor: textColor,
                 isAdmin: _isAdmin,
                 onEdit: _loadKosts,
+                onDelete: () => _deleteKost(k.id, k.name),
               )).toList(),
             )
           else
@@ -194,6 +258,7 @@ class _KostScreenState extends State<KostScreen> {
                 muted: muted, textColor: textColor,
                 isAdmin: _isAdmin,
                 onEdit: _loadKosts,
+                onDelete: () => _deleteKost(k.id, k.name),
               ),
             )).toList()),
 
@@ -250,11 +315,12 @@ class _KostGridCard extends StatelessWidget {
   final bool isDark, isAdmin;
   final Color card, border, muted, textColor;
   final VoidCallback? onEdit;
+  final VoidCallback? onDelete;
 
   const _KostGridCard({
     required this.kost, required this.isDark, required this.card,
     required this.border, required this.muted, required this.textColor,
-    required this.isAdmin, this.onEdit,
+    required this.isAdmin, this.onEdit, this.onDelete,
   });
 
   @override
@@ -340,19 +406,24 @@ class _KostGridCard extends StatelessWidget {
               const SizedBox(width: 3),
               Text(kost.rating, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: textColor)),
               Text(' (${kost.reviews})', style: TextStyle(fontSize: 10, color: muted)),
-              const Spacer(),
+            ]),
+            const SizedBox(height: 8),
+            Row(children: [
               // Detail button
-              GestureDetector(
-                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => KostDetailScreen(kost: kost))),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                  decoration: BoxDecoration(color: AppColors.tealBg, borderRadius: BorderRadius.circular(8)),
-                  child: const Text('Detail', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.teal)),
+              Expanded(
+                child: GestureDetector(
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => KostDetailScreen(kost: kost))),
+                  child: Container(
+                    alignment: Alignment.center,
+                    padding: const EdgeInsets.symmetric(vertical: 6),
+                    decoration: BoxDecoration(color: AppColors.tealBg, borderRadius: BorderRadius.circular(8)),
+                    child: const Text('Detail', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.teal)),
+                  ),
                 ),
               ),
               // Edit button (admin only)
               if (isAdmin) ...[
-                const SizedBox(width: 6),
+                const SizedBox(width: 4),
                 GestureDetector(
                   onTap: () async {
                     await Navigator.push(
@@ -362,9 +433,18 @@ class _KostGridCard extends StatelessWidget {
                     onEdit?.call();
                   },
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                     decoration: BoxDecoration(color: AppColors.coralBg, borderRadius: BorderRadius.circular(8)),
-                    child: const Text('Edit', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.coral)),
+                    child: const Icon(Icons.edit_rounded, size: 14, color: AppColors.coral),
+                  ),
+                ),
+                const SizedBox(width: 4),
+                GestureDetector(
+                  onTap: onDelete,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                    decoration: BoxDecoration(color: isDark ? AppColors.bg2Dark : AppColors.bg2Light, borderRadius: BorderRadius.circular(8)),
+                    child: Icon(Icons.delete_outline_rounded, size: 14, color: muted),
                   ),
                 ),
               ],
@@ -383,11 +463,12 @@ class _KostListCard extends StatelessWidget {
   final bool isDark, isAdmin;
   final Color card, border, muted, textColor;
   final VoidCallback? onEdit;
+  final VoidCallback? onDelete;
 
   const _KostListCard({
     required this.kost, required this.isDark, required this.card,
     required this.border, required this.muted, required this.textColor,
-    required this.isAdmin, this.onEdit,
+    required this.isAdmin, this.onEdit, this.onDelete,
   });
 
   @override
@@ -470,8 +551,10 @@ class _KostListCard extends StatelessWidget {
                 child: _actionBtn(Icons.edit_rounded, AppColors.coral),
               ),
               const SizedBox(width: 6),
-              // Delete (masih kosong, siap diisi)
-              _actionBtn(Icons.delete_outline_rounded, muted),
+              GestureDetector(
+                onTap: onDelete,
+                child: _actionBtn(Icons.delete_outline_rounded, muted),
+              ),
             ],
           ]),
         ]),

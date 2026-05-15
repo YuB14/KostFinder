@@ -868,7 +868,7 @@ class _ReviewCard extends StatelessWidget {
   Widget _statusBadge(String status) {
     switch (status) {
       case 'Disetujui':
-        return PillBadge.green('Disetujui');
+        return PillBadge.teal('Disetujui');
       case 'Menunggu':
         return PillBadge.yellow('Menunggu');
       case 'Ditolak':

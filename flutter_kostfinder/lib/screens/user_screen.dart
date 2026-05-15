@@ -1,4 +1,6 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import '../theme/app_theme.dart';
 import '../widgets/shared_widgets.dart';
 import '../services/api_service.dart';
@@ -58,6 +60,8 @@ class _UserScreenState extends State<UserScreen> {
     final passwordCtrl = TextEditingController();
     String role = isEdit ? (user['role'] == 'admin' ? 'Admin' : 'Pengguna') : 'Pengguna';
     bool isSubmitting = false;
+    XFile? pickedPhoto;
+    final ImagePicker picker = ImagePicker();
 
     showModalBottomSheet(
       context: context,
@@ -80,10 +84,11 @@ class _UserScreenState extends State<UserScreen> {
               decoration: BoxDecoration(color: card, borderRadius: BorderRadius.circular(24)),
               child: Form(
                 key: formKey,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                     Row(
                       children: [
                         Container(
@@ -99,6 +104,32 @@ class _UserScreenState extends State<UserScreen> {
                           icon: Icon(Icons.close_rounded, color: muted),
                         ),
                       ],
+                    ),
+                    const SizedBox(height: 20),
+                    
+                    Center(
+                      child: GestureDetector(
+                        onTap: () async {
+                          final img = await picker.pickImage(source: ImageSource.gallery);
+                          if (img != null) setStateSheet(() => pickedPhoto = img);
+                        },
+                        child: Container(
+                          width: 80, height: 80,
+                          decoration: BoxDecoration(
+                            color: isDark ? AppColors.bgDark : AppColors.bgLight,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: border),
+                            image: pickedPhoto != null 
+                              ? DecorationImage(image: FileImage(File(pickedPhoto!.path)), fit: BoxFit.cover)
+                              : (isEdit && (user['photo'] != null || user['profile_picture'] != null))
+                                ? DecorationImage(image: NetworkImage(ApiService.getImageUrl(user['photo']?.toString() ?? user['profile_picture']?.toString())), fit: BoxFit.cover)
+                                : null,
+                          ),
+                          child: pickedPhoto == null && !(isEdit && (user['photo'] != null || user['profile_picture'] != null))
+                              ? Icon(Icons.add_a_photo_rounded, color: muted)
+                              : null,
+                        ),
+                      ),
                     ),
                     const SizedBox(height: 20),
                     
@@ -198,12 +229,14 @@ class _UserScreenState extends State<UserScreen> {
                                 email: emailCtrl.text,
                                 password: passwordCtrl.text.isNotEmpty ? passwordCtrl.text : null,
                                 role: role.toLowerCase(),
+                                profilePicturePath: pickedPhoto?.path,
                               );
                             } else {
                               await ApiService.register(
                                 name: nameCtrl.text,
                                 email: emailCtrl.text,
                                 password: passwordCtrl.text,
+                                profilePicturePath: pickedPhoto?.path,
                               );
                               // We can't set role natively in current /auth/register unless backend allows it, 
                               // but let's just proceed. 
@@ -234,6 +267,7 @@ class _UserScreenState extends State<UserScreen> {
                     ),
                   ],
                 ),
+               ),
               ),
             ),
           );
@@ -405,7 +439,7 @@ class _UserScreenState extends State<UserScreen> {
                         Text(role.toUpperCase(), style: TextStyle(fontSize: 9, color: muted)),
                       ])),
                     ])),
-                    Expanded(flex: 2, child: isActive ? PillBadge.green('● Aktif') : PillBadge.yellow('● Tidak Aktif')),
+                    Expanded(flex: 2, child: isActive ? PillBadge.teal('● Aktif') : PillBadge.yellow('● Tidak Aktif')),
                     Expanded(flex: 2, child: Text(joined, style: TextStyle(fontSize: 10, color: muted), maxLines: 1, overflow: TextOverflow.ellipsis)),
                     SizedBox(width: 60, child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                       _ActionBtn(icon: Icons.edit_rounded, onTap: () => _showUserSheet(user: u)),
