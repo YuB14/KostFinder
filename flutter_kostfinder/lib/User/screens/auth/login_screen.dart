@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../theme/app_theme.dart';
-import '../../services/api_service.dart';
-import '../main_screen.dart';
+import '../../providers/auth_provider.dart';
 import 'register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -42,15 +42,15 @@ class _LoginScreenState extends State<LoginScreen>
     }
     setState(() { _isLoading = true; _error = ''; });
     try {
-      final res = await ApiService.login(_loginEmailCtrl.text.trim(), _loginPwCtrl.text);
+      final result = await context.read<AuthProvider>().login(
+        _loginEmailCtrl.text.trim(),
+        _loginPwCtrl.text,
+      );
       if (!mounted) return;
-      if (res['success'] == true) {
-        await ApiService.saveSession(res['user']);
-        if (!mounted) return;
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const MainScreen()));
-      } else {
-        setState(() => _error = res['message'] ?? 'Login gagal');
+      if (result['success'] != true) {
+        setState(() => _error = result['message'] ?? 'Login gagal');
       }
+      // Jika berhasil: AuthProvider.notifyListeners() → AuthWrapper otomatis redirect
     } catch (e) {
       setState(() => _error = 'Koneksi gagal: $e');
     }

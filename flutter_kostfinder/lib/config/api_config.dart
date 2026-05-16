@@ -2,8 +2,8 @@ class ApiConfig {
   // ── Ganti baseUrl sesuai environment ──────────────────────────
   // Emulator Android  : http://10.0.2.2:8000
   // Device fisik      : http://<IP_KOMPUTER>:8000 (jalankan: php artisan serve --host=0.0.0.0)
-  // IP komputer saat ini: 10.10.186.165
-  static const String baseUrl = 'http://10.10.186.165:8000';
+  // IP komputer saat ini: 192.168.1.8
+  static const String baseUrl = 'http://192.168.1.8:8000';
   static const String apiUrl = '$baseUrl/api';
 
   // User API endpoints

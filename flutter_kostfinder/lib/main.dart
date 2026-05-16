@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'Admin/theme/app_theme.dart';
-import 'providers/auth_provider.dart';
-import 'screens/auth/login_screen.dart';
-import 'screens/main_screen.dart';
+import 'User/providers/auth_provider.dart';
+import 'User/screens/auth/login_screen.dart';
+import 'User/screens/main_screen.dart' as user_screen;
 import 'Admin/screens/main_screen.dart' as admin;
 
 void main() {
@@ -74,7 +74,8 @@ class _AuthWrapperState extends State<AuthWrapper> {
           if (auth.user?.role == 'admin') {
             return const admin.MainScreen();
           }
-          return const MainScreen();
+          // Gunakan User MainScreen yang punya konten lengkap
+          return const user_screen.MainScreen();
         }
         return const LoginScreen();
       },

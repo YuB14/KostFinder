@@ -3,7 +3,7 @@ import '../Admin/theme/app_theme.dart';
 import '../main.dart' show themeNotifier;
 import '../services/api_service.dart';
 import 'package:provider/provider.dart';
-import '../providers/auth_provider.dart';
+import '../User/providers/auth_provider.dart';
 
 // ─── SharedAppBar ─────────────────────────────────────────────────────────────
 
@@ -204,9 +204,7 @@ class SharedAppBar extends StatelessWidget implements PreferredSizeWidget {
                   onSelected: (value) async {
                     if (value == 'logout') {
                       if (!context.mounted) return;
-                      // Kembali ke root / AuthWrapper
-                      Navigator.of(context).popUntil((route) => route.isFirst);
-                      // AuthProvider akan handle penghapusan session dan build ulang UI ke LoginScreen
+                      // logout() hapus session + notifyListeners() → AuthWrapper rebuild ke LoginScreen
                       await context.read<AuthProvider>().logout();
                     }
                   },

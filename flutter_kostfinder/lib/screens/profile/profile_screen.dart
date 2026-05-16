@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../services/api_service.dart';
-import '../auth/login_screen.dart';
+import 'package:provider/provider.dart';
+import '../../providers/auth_provider.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -20,7 +20,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _loadSession() async {
-    _session = await ApiService.getSession();
+    final auth = context.read<AuthProvider>();
+    _session = {
+      'name': auth.user?.name ?? '',
+      'email': auth.user?.email ?? '',
+      'role': auth.user?.role ?? 'user',
+      'id': auth.user?.id ?? '-',
+    };
     setState(() => _loading = false);
   }
 
@@ -43,14 +49,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ],
       ),
     );
-    if (confirm == true) {
-      await ApiService.clearSession();
-      if (!mounted) return;
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (_) => const LoginScreen()),
-        (_) => false,
-      );
+    if (confirm == true && mounted) {
+      // AuthProvider.logout() hapus session + notifyListeners() → AuthWrapper rebuild ke LoginScreen
+      await context.read<AuthProvider>().logout();
     }
   }
 
