@@ -1,4 +1,4 @@
-import '../../config/api_config.dart';
+import '../config/api_config.dart';
 
 class FavoriteModel {
   final String id;

@@ -74,7 +74,7 @@ class Kost extends Model
             3  => 'Pinggir Kota',
             4  => 'Dekat Transportasi Umum',
             5  => 'Perumahan',
-            6  => 'Dekat Pasar / Mall',
+            6  => 'Dekat Pasar',
             7  => 'Kawasan Industri',
             8  => 'Pinggir Jalan Utama',
             9  => 'Pedesaan / Wisata',

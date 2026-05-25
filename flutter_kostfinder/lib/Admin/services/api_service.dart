@@ -1,9 +1,10 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../config/api_config.dart';
 
 class ApiService {
-  static const String baseUrl = 'http://192.168.1.8:8000/api';
+  static String get baseUrl => ApiConfig.apiUrl;
 
   // HEADER
   static Future<Map<String, String>> _headers() async {
@@ -16,13 +17,19 @@ class ApiService {
     };
   }
 
+  static Future<Map<String, String>> _jsonHeaders() async {
+    final h = await _headers();
+    h['Content-Type'] = 'application/json';
+    return h;
+  }
+
   static String getImageUrl(String? path) {
     if (path == null || path.isEmpty) return '';
     if (path.startsWith('http://localhost')) {
-      return path.replaceFirst('http://localhost', baseUrl.replaceAll('/api', ''));
+      return path.replaceFirst('http://localhost', ApiConfig.baseUrl);
     }
     if (!path.startsWith('http')) {
-      return '${baseUrl.replaceAll('/api', '')}/storage/$path';
+      return '${ApiConfig.baseUrl}/storage/$path';
     }
     return path;
   }
@@ -87,14 +94,14 @@ class ApiService {
   }
 
   static Future<Map<String, dynamic>?> getSession() async {
-  final prefs = await SharedPreferences.getInstance();
-  final user = prefs.getString('user');
+    final prefs = await SharedPreferences.getInstance();
+    final user = prefs.getString('user');
 
-  if (user != null) {
-    return jsonDecode(user);
+    if (user != null) {
+      return jsonDecode(user);
+    }
+    return null;
   }
-  return null;
-}
 
   static Future<void> clearSession() async {
     final prefs = await SharedPreferences.getInstance();
@@ -128,11 +135,10 @@ class ApiService {
   // ================= KOST =================
 
   static Future<List<dynamic>> getKosts() async {
-    final res = await http.get(Uri.parse('$baseUrl/kost'));
-
-    print("STATUS GET: ${res.statusCode}");
-    print("BODY GET: ${res.body}");
-
+    final res = await http.get(
+      Uri.parse('$baseUrl/kost'),
+      headers: await _headers(),
+    );
     final data = jsonDecode(res.body);
     return data['data'] ?? [];
   }
@@ -142,91 +148,22 @@ class ApiService {
     return jsonDecode(res.body);
   }
 
-  static String _mapKelas(String kelas) {
-    if (kelas == '0' || kelas == '1' || kelas == '2') return kelas;
-    switch (kelas.toLowerCase()) {
-      case 'ekonomi': return '0';
-      case 'premium': return '2';
-      default: return '1'; // standar
-    }
-  }
-
-  static String _mapJenisKost(String jenis) {
-    if (jenis == '1' || jenis == '2' || jenis == '3') return jenis;
-    switch (jenis.toLowerCase()) {
-      case 'pria': return '1';
-      case 'wanita': return '2';
-      default: return '3'; // bebas / campur
-    }
-  }
-
-  static String _mapStatus(String status) {
-    if (status == '0' || status == '1') return status;
-    final s = status.toLowerCase();
-    if (s == 'penuh' || s == 'tidak aktif') return '0';
-    return '1'; // default aktif
-  }
-
+  /// Tambah kost baru — mengirim semua field sesuai Laravel KostController.store
   static Future<Map<String, dynamic>> addKost({
     required String namaKost,
     required String alamatKost,
-    required String kelas,
-    required String jenisKost,
-    required String status,
-    required String fasilitas,
     required String hargaKost,
-    required String nomorTelepon,
-    required String deskripsi,
-    required List<String> fotoPaths,
-  }) async {
-    final request = http.MultipartRequest(
-      'POST',
-      Uri.parse('$baseUrl/kost'),
-    );
-
-    request.headers.addAll(await _headers());
-
-    request.fields['nama_kost'] = namaKost;
-    request.fields['alamat_kost'] = alamatKost;
-    request.fields['kelas'] = _mapKelas(kelas);
-    request.fields['jenis_kost'] = _mapJenisKost(jenisKost);
-    request.fields['tipe_kos'] = _mapJenisKost(jenisKost);
-    request.fields['status'] = _mapStatus(status);
-    request.fields['fasilitas'] = fasilitas;
-    request.fields['harga_kost'] = hargaKost;
-    request.fields['nomor_telepon'] = nomorTelepon;
-    request.fields['deskripsi'] = deskripsi;
-
-    final String fasLow = fasilitas.toLowerCase();
-    request.fields['wifi'] = fasLow.contains('wifi') ? '1' : '0';
-    request.fields['ac'] = fasLow.contains('ac') ? '1' : '0';
-    request.fields['kamar_mandi_dalam'] = (fasLow.contains('kamar mandi dalam') || fasLow.contains('kamar mandi')) ? '1' : '0';
-    request.fields['parkir_motor'] = (fasLow.contains('parkir') || fasLow.contains('motor')) ? '1' : '0';
-    request.fields['laundry'] = fasLow.contains('laundry') ? '1' : '0';
-    request.fields['listrik'] = fasLow.contains('listrik') ? '1' : '0';
-
-    if (fotoPaths.isNotEmpty) {
-      request.files.add(
-        await http.MultipartFile.fromPath(
-          'foto_kost',
-          fotoPaths.first,
-        ),
-      );
-    }
-
-    final response = await request.send();
-    final body = await response.stream.bytesToString();
-    return jsonDecode(body);
-  }
-
-  static Future<Map<String, dynamic>> createKost({
-    required String namaKost,
-    required String alamatKost,
-    required String kelas,
-    required String jenisKost,
-    required String status,
-    required String fasilitas,
-    required String hargaKost,
+    required int tipeKos,
+    required int status,
+    required double luasKamar,
+    required int kodeLokasi,
+    String? wilayahId,
+    required int listrik,
+    required int ac,
+    required int kamarMandiDalam,
+    required int parkirMotor,
+    required int laundry,
+    required int wifi,
     required String nomorTelepon,
     required String deskripsi,
     required List<String> fotoPaths,
@@ -242,32 +179,28 @@ class ApiService {
       request.fields.addAll({
         'nama_kost': namaKost,
         'alamat_kost': alamatKost,
-        'kelas': _mapKelas(kelas),
-        'jenis_kost': _mapJenisKost(jenisKost),
-        'tipe_kos': _mapJenisKost(jenisKost),
-        'status': _mapStatus(status),
-        'fasilitas': fasilitas,
         'harga_kost': hargaKost,
+        'tipe_kos': tipeKos.toString(),
+        'status': status.toString(),
+        'luas_kamar': luasKamar.toString(),
+        'kode_lokasi': kodeLokasi.toString(),
+        'listrik': listrik.toString(),
+        'ac': ac.toString(),
+        'kamar_mandi_dalam': kamarMandiDalam.toString(),
+        'parkir_motor': parkirMotor.toString(),
+        'laundry': laundry.toString(),
+        'wifi': wifi.toString(),
         'nomor_telepon': nomorTelepon,
         'deskripsi': deskripsi,
       });
 
-      final String fasLow = fasilitas.toLowerCase();
-      request.fields.addAll({
-        'wifi': fasLow.contains('wifi') ? '1' : '0',
-        'ac': fasLow.contains('ac') ? '1' : '0',
-        'kamar_mandi_dalam': (fasLow.contains('kamar mandi dalam') || fasLow.contains('kamar mandi')) ? '1' : '0',
-        'parkir_motor': (fasLow.contains('parkir') || fasLow.contains('motor')) ? '1' : '0',
-        'laundry': fasLow.contains('laundry') ? '1' : '0',
-        'listrik': fasLow.contains('listrik') ? '1' : '0',
-      });
+      if (wilayahId != null && wilayahId.isNotEmpty) {
+        request.fields['wilayah_id'] = wilayahId;
+      }
 
       if (fotoPaths.isNotEmpty) {
         request.files.add(
-          await http.MultipartFile.fromPath(
-            'foto_kost',
-            fotoPaths.first,
-          ),
+          await http.MultipartFile.fromPath('foto_kost', fotoPaths.first),
         );
       }
 
@@ -283,15 +216,23 @@ class ApiService {
     }
   }
 
+  /// Update kost — mengirim semua field sesuai Laravel KostController.update
   static Future<Map<String, dynamic>> updateKost({
     required String id,
     required String namaKost,
     required String alamatKost,
-    required String kelas,
-    required String jenisKost,
-    required String status,
-    required String fasilitas,
     required String hargaKost,
+    required int tipeKos,
+    required int status,
+    required double luasKamar,
+    required int kodeLokasi,
+    String? wilayahId,
+    required int listrik,
+    required int ac,
+    required int kamarMandiDalam,
+    required int parkirMotor,
+    required int laundry,
+    required int wifi,
     required String nomorTelepon,
     required String deskripsi,
     List<String> fotoPaths = const [],
@@ -308,32 +249,28 @@ class ApiService {
         '_method': 'PUT',
         'nama_kost': namaKost,
         'alamat_kost': alamatKost,
-        'kelas': _mapKelas(kelas),
-        'jenis_kost': _mapJenisKost(jenisKost),
-        'tipe_kos': _mapJenisKost(jenisKost),
-        'status': _mapStatus(status),
-        'fasilitas': fasilitas,
         'harga_kost': hargaKost,
+        'tipe_kos': tipeKos.toString(),
+        'status': status.toString(),
+        'luas_kamar': luasKamar.toString(),
+        'kode_lokasi': kodeLokasi.toString(),
+        'listrik': listrik.toString(),
+        'ac': ac.toString(),
+        'kamar_mandi_dalam': kamarMandiDalam.toString(),
+        'parkir_motor': parkirMotor.toString(),
+        'laundry': laundry.toString(),
+        'wifi': wifi.toString(),
         'nomor_telepon': nomorTelepon,
         'deskripsi': deskripsi,
       });
 
-      final String fasLow = fasilitas.toLowerCase();
-      request.fields.addAll({
-        'wifi': fasLow.contains('wifi') ? '1' : '0',
-        'ac': fasLow.contains('ac') ? '1' : '0',
-        'kamar_mandi_dalam': (fasLow.contains('kamar mandi dalam') || fasLow.contains('kamar mandi')) ? '1' : '0',
-        'parkir_motor': (fasLow.contains('parkir') || fasLow.contains('motor')) ? '1' : '0',
-        'laundry': fasLow.contains('laundry') ? '1' : '0',
-        'listrik': fasLow.contains('listrik') ? '1' : '0',
-      });
+      if (wilayahId != null && wilayahId.isNotEmpty) {
+        request.fields['wilayah_id'] = wilayahId;
+      }
 
       if (fotoPaths.isNotEmpty) {
         request.files.add(
-          await http.MultipartFile.fromPath(
-            'foto_kost',
-            fotoPaths.first,
-          ),
+          await http.MultipartFile.fromPath('foto_kost', fotoPaths.first),
         );
       }
 
@@ -351,6 +288,17 @@ class ApiService {
       Uri.parse('$baseUrl/kost/$id'),
       headers: await _headers(),
     );
+  }
+
+  // ================= WILAYAH =================
+
+  static Future<List<dynamic>> getWilayahs() async {
+    final res = await http.get(
+      Uri.parse(ApiConfig.wilayah),
+      headers: await _headers(),
+    );
+    final data = jsonDecode(res.body);
+    return data['data'] ?? [];
   }
 
   // ================= FAVORITE =================
@@ -371,11 +319,11 @@ class ApiService {
   }) async {
     final res = await http.post(
       Uri.parse('$baseUrl/favorite'),
-      headers: await _headers(),
-      body: {
+      headers: await _jsonHeaders(),
+      body: jsonEncode({
         'user_id': userId,
         'kost_id': kostId,
-      },
+      }),
     );
 
     return jsonDecode(res.body);
@@ -391,53 +339,48 @@ class ApiService {
   // ================= REVIEW =================
 
   static Future<List<dynamic>> getReviews() async {
-    final res = await http.get(Uri.parse('$baseUrl/review'));
+    final res = await http.get(
+      Uri.parse('$baseUrl/review'),
+      headers: await _headers(),
+    );
     final data = jsonDecode(res.body);
     return data['data'] ?? [];
   }
-static Future<Map<String, dynamic>> createReview({
-  required String userId,
-  required String kostId,
-  required int rating,
-  required String komentar,
-}) async {
-  print("=== CREATE REVIEW DIPANGGIL ===");
 
-  final bodyData = {
-    'user_id': userId,
-    'kost_id': kostId,
-    'rating': rating.toString(),
-    'komentar': komentar,
-  };
+  static Future<Map<String, dynamic>> createReview({
+    required String userId,
+    required String kostId,
+    required int rating,
+    required String komentar,
+  }) async {
+    final res = await http.post(
+      Uri.parse('$baseUrl/review'),
+      headers: await _jsonHeaders(),
+      body: jsonEncode({
+        'user_id': userId,
+        'kost_id': kostId,
+        'rating': rating,
+        'komentar': komentar,
+      }),
+    );
 
-  print("REQUEST BODY: $bodyData");
-
-  final res = await http.post(
-    Uri.parse('$baseUrl/review'),
-    headers: await _headers(),
-    body: bodyData,
-  );
-
-  print("POST STATUS: ${res.statusCode}");
-  print("POST BODY: ${res.body}");
-
-  return jsonDecode(res.body);
-}
+    return jsonDecode(res.body);
+  }
 
   static Future<Map<String, dynamic>> updateReview(String id, {
     String? status,
     int? rating,
     String? komentar,
   }) async {
-    final Map<String, String> body = {};
+    final Map<String, dynamic> body = {};
     if (status != null) body['status'] = status;
-    if (rating != null) body['rating'] = rating.toString();
+    if (rating != null) body['rating'] = rating;
     if (komentar != null) body['komentar'] = komentar;
 
     final res = await http.put(
       Uri.parse('$baseUrl/review/$id'),
-      headers: await _headers(),
-      body: body,
+      headers: await _jsonHeaders(),
+      body: jsonEncode(body),
     );
 
     return jsonDecode(res.body);

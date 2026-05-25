@@ -1,7 +1,7 @@
-import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import '../theme/app_theme.dart';
+import '../../theme/app_theme.dart';
 import '../../widgets/shared_widgets.dart';
 import '../services/api_service.dart';
 import '../../widgets/shared_app_bar.dart';
@@ -61,6 +61,7 @@ class _UserScreenState extends State<UserScreen> {
     String role = isEdit ? (user['role'] == 'admin' ? 'Admin' : 'Pengguna') : 'Pengguna';
     bool isSubmitting = false;
     XFile? pickedPhoto;
+    Uint8List? pickedPhotoBytes;
     final ImagePicker picker = ImagePicker();
 
     showModalBottomSheet(
@@ -111,7 +112,13 @@ class _UserScreenState extends State<UserScreen> {
                       child: GestureDetector(
                         onTap: () async {
                           final img = await picker.pickImage(source: ImageSource.gallery);
-                          if (img != null) setStateSheet(() => pickedPhoto = img);
+                          if (img != null) {
+                            final bytes = await img.readAsBytes();
+                            setStateSheet(() {
+                              pickedPhoto = img;
+                              pickedPhotoBytes = bytes;
+                            });
+                          }
                         },
                         child: Container(
                           width: 80, height: 80,
@@ -119,13 +126,13 @@ class _UserScreenState extends State<UserScreen> {
                             color: isDark ? AppColors.bgDark : AppColors.bgLight,
                             shape: BoxShape.circle,
                             border: Border.all(color: border),
-                            image: pickedPhoto != null 
-                              ? DecorationImage(image: FileImage(File(pickedPhoto!.path)), fit: BoxFit.cover)
+                            image: pickedPhotoBytes != null 
+                              ? DecorationImage(image: MemoryImage(pickedPhotoBytes!), fit: BoxFit.cover)
                               : (isEdit && (user['photo'] != null || user['profile_picture'] != null))
                                 ? DecorationImage(image: NetworkImage(ApiService.getImageUrl(user['photo']?.toString() ?? user['profile_picture']?.toString())), fit: BoxFit.cover)
                                 : null,
                           ),
-                          child: pickedPhoto == null && !(isEdit && (user['photo'] != null || user['profile_picture'] != null))
+                          child: pickedPhotoBytes == null && !(isEdit && (user['photo'] != null || user['profile_picture'] != null))
                               ? Icon(Icons.add_a_photo_rounded, color: muted)
                               : null,
                         ),
@@ -351,20 +358,6 @@ class _UserScreenState extends State<UserScreen> {
               Row(children: [
                 Text('Daftar Pengguna', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: textColor)),
                 const Spacer(),
-                OutlinedButton.icon(
-                  onPressed: () {},
-                  icon: const Icon(Icons.filter_list_rounded, size: 14),
-                  label: const Text('Filter'),
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-                    minimumSize: Size.zero,
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-                    side: BorderSide(color: border),
-                    foregroundColor: muted,
-                  ),
-                ),
-                const SizedBox(width: 8),
                 ElevatedButton.icon(
                   onPressed: () => _showUserSheet(),
                   icon: const Icon(Icons.add_rounded, size: 14, color: Colors.white),
@@ -417,42 +410,146 @@ class _UserScreenState extends State<UserScreen> {
                 final photo = ApiService.getImageUrl(u['photo']?.toString() ?? u['profile_picture']?.toString());
                 final isActive = status == 'Aktif';
 
-                return Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  decoration: BoxDecoration(
-                    border: i < _filtered.length - 1 ? Border(bottom: BorderSide(color: border)) : null,
-                  ),
-                  child: Row(children: [
-                    Expanded(flex: 3, child: Row(children: [
-                      Container(
-                        width: 34, height: 34,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: AppColors.coral,
-                          image: DecorationImage(image: NetworkImage(photo), fit: BoxFit.cover),
+                return GestureDetector(
+                  onTap: () => _showUserDetail(u, isDark),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    decoration: BoxDecoration(
+                      border: i < _filtered.length - 1 ? Border(bottom: BorderSide(color: border)) : null,
+                    ),
+                    child: Row(children: [
+                      Expanded(flex: 3, child: Row(children: [
+                        ClipOval(
+                          child: SizedBox(
+                            width: 34, height: 34,
+                            child: (photo.isNotEmpty)
+                              ? Image.network(photo, fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) => Container(
+                                    color: AppColors.coral,
+                                    alignment: Alignment.center,
+                                    child: Text(_getInitials(name), style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700)),
+                                  ),
+                                )
+                              : Container(
+                                  color: AppColors.coral,
+                                  alignment: Alignment.center,
+                                  child: Text(_getInitials(name), style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700)),
+                                ),
+                          ),
                         ),
-                        child: null,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        Text(name, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: textColor), maxLines: 1, overflow: TextOverflow.ellipsis),
-                        Text(role.toUpperCase(), style: TextStyle(fontSize: 9, color: muted)),
+                        const SizedBox(width: 8),
+                        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                          Text(name, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: textColor), maxLines: 1, overflow: TextOverflow.ellipsis),
+                          Text(role.toUpperCase(), style: TextStyle(fontSize: 9, color: muted)),
+                        ])),
                       ])),
-                    ])),
-                    Expanded(flex: 2, child: isActive ? PillBadge.teal('● Aktif') : PillBadge.yellow('● Tidak Aktif')),
-                    Expanded(flex: 2, child: Text(joined, style: TextStyle(fontSize: 10, color: muted), maxLines: 1, overflow: TextOverflow.ellipsis)),
-                    SizedBox(width: 60, child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                      _ActionBtn(icon: Icons.edit_rounded, onTap: () => _showUserSheet(user: u)),
-                      const SizedBox(width: 5),
-                      _ActionBtn(icon: Icons.delete_outline_rounded, onTap: () => _deleteUser(u['id'].toString(), name)),
-                    ])),
-                  ]),
+                      Expanded(flex: 2, child: isActive ? PillBadge.teal('● Aktif') : PillBadge.yellow('● Tidak Aktif')),
+                      Expanded(flex: 2, child: Text(joined, style: TextStyle(fontSize: 10, color: muted), maxLines: 1, overflow: TextOverflow.ellipsis)),
+                      SizedBox(width: 60, child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                        _ActionBtn(icon: Icons.edit_rounded, onTap: () => _showUserSheet(user: u)),
+                        const SizedBox(width: 5),
+                        _ActionBtn(icon: Icons.delete_outline_rounded, onTap: () => _deleteUser(u['id'].toString(), name)),
+                      ])),
+                    ]),
+                  ),
                 );
               }).toList(),
             ),
           ),
           const SizedBox(height: 20),
         ],
+      ),
+    );
+  }
+
+  void _showUserDetail(Map<String, dynamic> u, bool isDark) {
+    final card = isDark ? AppColors.cardDark : AppColors.cardLight;
+    final border = isDark ? AppColors.borderDark : AppColors.borderLight;
+    final muted = isDark ? AppColors.mutedDark : AppColors.mutedLight;
+    final textColor = isDark ? AppColors.textDark : AppColors.textLight;
+
+    final name = u['name'] ?? '-';
+    final email = u['email'] ?? '-';
+    final role = u['role'] ?? 'user';
+    final status = u['status'] ?? 'Tidak Aktif';
+    final joined = u['created_at']?.toString() ?? '-';
+    final photo = ApiService.getImageUrl(u['photo']?.toString() ?? u['profile_picture']?.toString());
+    final isActive = status == 'Aktif';
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (_) => Container(
+        margin: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(color: card, borderRadius: BorderRadius.circular(24), border: Border.all(color: border)),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          ClipOval(
+            child: SizedBox(
+              width: 72, height: 72,
+              child: photo.isNotEmpty
+                ? Image.network(photo, fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
+                      color: AppColors.coral, alignment: Alignment.center,
+                      child: Text(_getInitials(name), style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w800)),
+                    ))
+                : Container(
+                    color: AppColors.coral, alignment: Alignment.center,
+                    child: Text(_getInitials(name), style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w800)),
+                  ),
+            ),
+          ),
+          const SizedBox(height: 14),
+          Text(name, style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: textColor)),
+          const SizedBox(height: 4),
+          Text(email, style: TextStyle(fontSize: 13, color: muted)),
+          const SizedBox(height: 12),
+          Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+              decoration: BoxDecoration(color: role == 'admin' ? AppColors.coralBg : AppColors.tealBg, borderRadius: BorderRadius.circular(20)),
+              child: Text(role == 'admin' ? '🛡️ Admin' : '👤 Pengguna',
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: role == 'admin' ? AppColors.coral : AppColors.teal)),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+              decoration: BoxDecoration(color: isActive ? AppColors.tealBg : AppColors.yellowBg, borderRadius: BorderRadius.circular(20)),
+              child: Text(isActive ? '● Aktif' : '● Tidak Aktif',
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: isActive ? AppColors.teal : AppColors.yellow)),
+            ),
+          ]),
+          const SizedBox(height: 16),
+          Container(
+            width: double.infinity, padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(color: isDark ? AppColors.bg2Dark : AppColors.bg2Light, borderRadius: BorderRadius.circular(12), border: Border.all(color: border)),
+            child: Row(children: [
+              Icon(Icons.calendar_today_rounded, size: 16, color: muted),
+              const SizedBox(width: 10),
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('Bergabung', style: TextStyle(fontSize: 11, color: muted)),
+                Text(joined, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: textColor)),
+              ]),
+            ]),
+          ),
+          const SizedBox(height: 16),
+          Row(children: [
+            Expanded(child: OutlinedButton.icon(
+              onPressed: () { Navigator.pop(context); _showUserSheet(user: u); },
+              icon: const Icon(Icons.edit_rounded, size: 16),
+              label: const Text('Edit'),
+              style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 12), side: BorderSide(color: border), foregroundColor: textColor, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
+            )),
+            const SizedBox(width: 10),
+            Expanded(child: ElevatedButton.icon(
+              onPressed: () { Navigator.pop(context); _deleteUser(u['id'].toString(), name); },
+              icon: const Icon(Icons.delete_outline_rounded, size: 16, color: Colors.white),
+              label: const Text('Hapus', style: TextStyle(color: Colors.white)),
+              style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 12), backgroundColor: AppColors.coral, elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
+            )),
+          ]),
+        ]),
       ),
     );
   }

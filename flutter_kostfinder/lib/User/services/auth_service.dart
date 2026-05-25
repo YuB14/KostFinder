@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../config/api_config.dart';
-import '../models/user_model.dart';
+import '../../models/user_model.dart';
 
 class AuthService {
   // ── Token-based auth headers untuk semua service ──────────────

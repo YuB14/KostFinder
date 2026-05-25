@@ -39,6 +39,9 @@ class DashboardController extends Controller
         $reviewThisMonth = Review::whereBetween('created_at', [$thisMonthStart, $now])->count();
         $reviewLastMonth = Review::whereBetween('created_at', [$lastMonthStart, $lastMonthEnd])->count();
 
+        $avgThisMonth = Review::whereBetween('created_at', [$thisMonthStart, $now])->avg('rating') ?? 0;
+        $avgLastMonth = Review::whereBetween('created_at', [$lastMonthStart, $lastMonthEnd])->avg('rating') ?? 0;
+
         return response()->json([
             'success' => true,
             'data'    => [
@@ -47,7 +50,7 @@ class DashboardController extends Controller
                 'total_user'    => (int) $totalUser,
                 'user_change'   => $this->calcChange($userThisMonth, $userLastMonth),
                 'avg_rating'    => $avgRating,
-                'rating_change' => $this->calcChange($reviewThisMonth, $reviewLastMonth),
+                'rating_change' => $this->calcChange((float)$avgThisMonth, (float)$avgLastMonth),
                 'total_fav'     => (int) $totalFav,
                 'fav_change'    => $this->calcChange($favThisMonth, $favLastMonth),
             ],

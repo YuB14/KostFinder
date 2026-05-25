@@ -1,14 +1,13 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../theme/app_theme.dart';
+import '../../theme/app_theme.dart';
 import '../../widgets/shared_widgets.dart';
 import '../services/api_service.dart';
 import 'kost_screen.dart';
+import 'kost_screen.dart' as user_kost;
+import 'kost_detail_screen.dart';
 import 'user_screen.dart';
 import '../../widgets/shared_app_bar.dart';
-import '../../screens/kost_detail_screen.dart';
-import '../../screens/kost_screen.dart' as user_kost;
 
 class DashboardScreen extends StatefulWidget {
   final VoidCallback? onNavigateKost;
@@ -27,11 +26,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   List<dynamic> _popularKostsDynamic = [];
   List<dynamic> _activitiesDynamic = [];
 
-  String _userId = '';
   String _userName = '';
-  String _userEmail = '';
-  String _userRole = '';
-  String? _userPhotoUrl;
 
   @override
   void initState() {
@@ -46,15 +41,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       final session = await ApiService.getSession();
       if (session != null) {
         final u = session['user'] ?? session;
-        _userId = u['id'].toString();
         _userName = u['name'] ?? 'Pengguna';
-        _userEmail = u['email'] ?? '';
-        _userRole = u['role'] ?? 'user';
-        
-        final photo = u['profile_picture'];
-        if (photo != null) {
-          _userPhotoUrl = ApiService.getImageUrl(photo.toString());
-        }
       }
 
       // Panggil satu-satu supaya kalau satu gagal tidak semua ikut gagal
@@ -89,24 +76,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
 
     if (mounted) setState(() => _isLoading = false);
-  }
-
-  String _getInitials(String name) {
-    if (name.trim().isEmpty) return 'U';
-    final parts = name.trim().split(RegExp(r'\s+'));
-    if (parts.length > 1) {
-      return (parts[0][0] + parts[1][0]).toUpperCase();
-    }
-    return parts[0].substring(0, parts[0].length >= 2 ? 2 : 1).toUpperCase();
-  }
-
-  ImageProvider? _getProfileImage(String? pathOrUrl) {
-    if (pathOrUrl == null) return null;
-    if (pathOrUrl.startsWith('http')) {
-      return NetworkImage(pathOrUrl);
-    } else {
-      return FileImage(File(pathOrUrl));
-    }
   }
 
   @override
@@ -222,7 +191,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Container(width: 40, height: 4, decoration: BoxDecoration(color: muted.withOpacity(0.3), borderRadius: BorderRadius.circular(10))),
+              Container(width: 40, height: 4, decoration: BoxDecoration(color: muted.withValues(alpha: 0.3), borderRadius: BorderRadius.circular(10))),
               const SizedBox(height: 20),
               Text('Aktivitas Terbaru', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: textColor)),
               const SizedBox(height: 16),

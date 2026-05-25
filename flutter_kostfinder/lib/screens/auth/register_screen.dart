@@ -1,8 +1,8 @@
-import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../theme/app_theme.dart';
-import '../../services/api_service.dart';
+import '../../User/services/api_service.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -17,12 +17,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _passCtrl = TextEditingController();
   bool _loading = false;
   bool _obscure = true;
-  File? _image;
+  Uint8List? _imageBytes;
+  String? _imageName;
 
   Future<void> _pickImage() async {
     final picker = ImagePicker();
     final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 80);
-    if (picked != null) setState(() => _image = File(picked.path));
+    if (picked != null) {
+      final bytes = await picked.readAsBytes();
+      setState(() {
+        _imageBytes = bytes;
+        _imageName = picked.name;
+      });
+    }
   }
 
   Future<void> _register() async {
@@ -36,7 +43,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
         name: _nameCtrl.text,
         email: _emailCtrl.text,
         password: _passCtrl.text,
-        profilePicturePath: _image?.path,
+        profilePictureBytes: _imageBytes,
+        profilePictureName: _imageName,
       );
       if (res['message'] == 'Register berhasil') {
         if (!mounted) return;
@@ -83,8 +91,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
             child: CircleAvatar(
               radius: 52,
               backgroundColor: AppColors.coralBg,
-              backgroundImage: _image != null ? FileImage(_image!) : null,
-              child: _image == null
+              backgroundImage: _imageBytes != null ? MemoryImage(_imageBytes!) : null,
+              child: _imageBytes == null
                   ? Column(mainAxisAlignment: MainAxisAlignment.center, children: [
                       const Icon(Icons.camera_alt, color: AppColors.coral, size: 28),
                       const SizedBox(height: 4),
@@ -142,3 +150,4 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 }
+

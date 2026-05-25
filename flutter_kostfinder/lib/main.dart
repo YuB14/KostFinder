@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'Admin/theme/app_theme.dart';
+import 'theme/app_theme.dart';
 import 'User/providers/auth_provider.dart';
-import 'User/screens/auth/login_screen.dart';
+import 'screens/auth/login_screen.dart';
 import 'User/screens/main_screen.dart' as user_screen;
 import 'Admin/screens/main_screen.dart' as admin;
 

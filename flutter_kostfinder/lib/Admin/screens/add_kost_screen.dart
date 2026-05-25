@@ -1,8 +1,7 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
-import '../theme/app_theme.dart';
+import '../../theme/app_theme.dart';
 import '../services/api_service.dart';
 import 'kost_screen.dart';
 
@@ -21,10 +20,25 @@ class _AddKostScreenState extends State<AddKostScreen> {
   final _hargaCtrl = TextEditingController();
   final _deskripsiCtrl = TextEditingController();
   final _kontakCtrl = TextEditingController();
-  final _fasilitasCtrl = TextEditingController();
+  final _luasKamarCtrl = TextEditingController();
 
   String _selectedTipe = 'Pria';
   String _selectedKelas = 'Standar';
+  int _selectedStatus = 1;
+  int _selectedKodeLokasi = 1;
+  String? _selectedWilayahId;
+  String _selectedWilayahNama = '';
+
+  // Binary facilities
+  bool _fListrik = true;
+  bool _fAc = false;
+  bool _fKmDalam = false;
+  bool _fParkir = false;
+  bool _fLaundry = false;
+  bool _fWifi = false;
+
+  // Wilayah list from API
+  List<dynamic> _wilayahList = [];
 
   bool _isSubmitting = false;
   int _currentStep = 0;
@@ -34,59 +48,67 @@ class _AddKostScreenState extends State<AddKostScreen> {
 
   bool get _isEdit => widget.editKost != null;
 
+  final _tipeList = ['Pria', 'Wanita', 'Bebas'];
+  final _kelasList = ['Ekonomi', 'Standar', 'Premium'];
+
   @override
   void initState() {
     super.initState();
+    _loadWilayahs();
     if (_isEdit) {
       final k = widget.editKost!;
       _namaCtrl.text = k.name;
       _alamatCtrl.text = k.location;
       _kontakCtrl.text = k.ownerNumber;
       _deskripsiCtrl.text = k.description;
-      _fasilitasCtrl.text = k.facilities.join(', ');
       _selectedTipe = k.type;
       _selectedKelas = k.roomClass;
+      _selectedStatus = k.statusInt;
+      _selectedKodeLokasi = k.kodeLokasi;
+      _selectedWilayahId = k.wilayahId.isNotEmpty ? k.wilayahId : null;
+      _selectedWilayahNama = k.wilayahNama;
+      _luasKamarCtrl.text = k.luasKamar > 0 ? k.luasKamar.toStringAsFixed(0) : '';
+
+      // Binary facilities
+      _fListrik = k.bListrik == 1;
+      _fAc = k.bAc == 1;
+      _fKmDalam = k.bKmDalam == 1;
+      _fParkir = k.bParkir == 1;
+      _fLaundry = k.bLaundry == 1;
+      _fWifi = k.bWifi == 1;
 
       // Harga: strip prefix "Rp " dan format ulang
       final rawHarga = k.price.replaceAll('Rp ', '').replaceAll('.', '').trim();
       final intHarga = int.tryParse(rawHarga);
       if (intHarga != null) {
-        _hargaCtrl.text = intHarga
-            .toString()
-            .replaceAllMapped(
-              RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-              (m) => '${m[1]}.',
-            );
+        _hargaCtrl.text = intHarga.toString().replaceAllMapped(
+          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.',
+        );
       }
     }
-    
     _hargaCtrl.addListener(_updateKelasFromHarga);
+  }
+
+  Future<void> _loadWilayahs() async {
+    try {
+      final list = await ApiService.getWilayahs();
+      if (mounted) setState(() => _wilayahList = list);
+    } catch (_) {}
   }
 
   void _updateKelasFromHarga() {
     final text = _hargaCtrl.text.replaceAll('.', '');
     final harga = int.tryParse(text) ?? 0;
-    
     String newKelas = 'Standar';
-    if (harga < 500000) {
-      newKelas = 'Ekonomi';
-    } else if (harga >= 1000000) {
-      newKelas = 'Premium';
-    }
-    
-    if (_selectedKelas != newKelas) {
-      setState(() {
-        _selectedKelas = newKelas;
-      });
-    }
+    if (harga < 1000000) newKelas = 'Ekonomi';
+    else if (harga > 1500000) newKelas = 'Premium';
+    if (_selectedKelas != newKelas) setState(() => _selectedKelas = newKelas);
   }
 
   Future<void> _pickImages() async {
     try {
       final List<XFile> images = await _picker.pickMultiImage();
-      if (images.isNotEmpty) {
-        setState(() => _selectedImages.addAll(images));
-      }
+      if (images.isNotEmpty) setState(() => _selectedImages.addAll(images));
     } catch (e) {
       debugPrint("Error picking images: $e");
     }
@@ -96,8 +118,11 @@ class _AddKostScreenState extends State<AddKostScreen> {
     setState(() => _selectedImages.removeAt(index));
   }
 
-  final _tipeList = ['Pria', 'Wanita', 'Bebas'];
-  final _kelasList = ['Ekonomi', 'Standar', 'Premium'];
+  int get _tipeKosInt {
+    if (_selectedTipe == 'Pria') return 1;
+    if (_selectedTipe == 'Wanita') return 2;
+    return 3;
+  }
 
   @override
   void dispose() {
@@ -107,7 +132,7 @@ class _AddKostScreenState extends State<AddKostScreen> {
     _hargaCtrl.dispose();
     _deskripsiCtrl.dispose();
     _kontakCtrl.dispose();
-    _fasilitasCtrl.dispose();
+    _luasKamarCtrl.dispose();
     super.dispose();
   }
 
@@ -120,6 +145,7 @@ class _AddKostScreenState extends State<AddKostScreen> {
 
     try {
       final hargaBersih = _hargaCtrl.text.replaceAll('.', '');
+      final luasKamar = double.tryParse(_luasKamarCtrl.text) ?? 0;
 
       Map<String, dynamic> res;
       if (_isEdit) {
@@ -127,11 +153,18 @@ class _AddKostScreenState extends State<AddKostScreen> {
           id: widget.editKost!.id,
           namaKost: _namaCtrl.text,
           alamatKost: _alamatCtrl.text,
-          kelas: _selectedKelas,
-          jenisKost: _selectedTipe,
-          status: widget.editKost!.status,
-          fasilitas: _fasilitasCtrl.text,
           hargaKost: hargaBersih,
+          tipeKos: _tipeKosInt,
+          status: _selectedStatus,
+          luasKamar: luasKamar,
+          kodeLokasi: _selectedKodeLokasi,
+          wilayahId: _selectedWilayahId,
+          listrik: _fListrik ? 1 : 0,
+          ac: _fAc ? 1 : 0,
+          kamarMandiDalam: _fKmDalam ? 1 : 0,
+          parkirMotor: _fParkir ? 1 : 0,
+          laundry: _fLaundry ? 1 : 0,
+          wifi: _fWifi ? 1 : 0,
           nomorTelepon: _kontakCtrl.text,
           deskripsi: _deskripsiCtrl.text,
           fotoPaths: _selectedImages.map((e) => e.path).toList(),
@@ -140,11 +173,18 @@ class _AddKostScreenState extends State<AddKostScreen> {
         res = await ApiService.addKost(
           namaKost: _namaCtrl.text,
           alamatKost: _alamatCtrl.text,
-          kelas: _selectedKelas,
-          jenisKost: _selectedTipe,
-          status: 'Aktif',
-          fasilitas: _fasilitasCtrl.text,
           hargaKost: hargaBersih,
+          tipeKos: _tipeKosInt,
+          status: _selectedStatus,
+          luasKamar: luasKamar,
+          kodeLokasi: _selectedKodeLokasi,
+          wilayahId: _selectedWilayahId,
+          listrik: _fListrik ? 1 : 0,
+          ac: _fAc ? 1 : 0,
+          kamarMandiDalam: _fKmDalam ? 1 : 0,
+          parkirMotor: _fParkir ? 1 : 0,
+          laundry: _fLaundry ? 1 : 0,
+          wifi: _fWifi ? 1 : 0,
           nomorTelepon: _kontakCtrl.text,
           deskripsi: _deskripsiCtrl.text,
           fotoPaths: _selectedImages.map((e) => e.path).toList(),
@@ -370,7 +410,7 @@ class _AddKostScreenState extends State<AddKostScreen> {
                           label: 'Kelas Kamar (Terisi Otomatis)',
                           value: _selectedKelas,
                           items: _kelasList,
-                          onChanged: null, // Disabled
+                          onChanged: null,
                           isDark: isDark, card: card, border: border,
                           textColor: textColor, muted: muted,
                         ),
@@ -397,6 +437,97 @@ class _AddKostScreenState extends State<AddKostScreen> {
                         ),
                         const SizedBox(height: 14),
                         _FormField(
+                          controller: _luasKamarCtrl,
+                          label: 'Luas Kamar (m²)',
+                          hint: 'e.g. 12',
+                          icon: Icons.square_foot_rounded,
+                          isDark: isDark, card: card, border: border,
+                          textColor: textColor, muted: muted, bg2: bg2,
+                          keyboardType: TextInputType.number,
+                          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                        ),
+                        const SizedBox(height: 14),
+                        // Status (0=Penuh, 1=Tersedia, 2+=sisa kamar)
+                        Text('Status Kamar', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: muted)),
+                        const SizedBox(height: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                          decoration: BoxDecoration(color: bg2, borderRadius: BorderRadius.circular(10), border: Border.all(color: border)),
+                          child: DropdownButtonHideUnderline(
+                            child: DropdownButton<int>(
+                              value: _selectedStatus,
+                              isExpanded: true,
+                              dropdownColor: card,
+                              style: TextStyle(fontSize: 13, color: textColor),
+                              icon: Icon(Icons.arrow_drop_down_rounded, color: muted),
+                              onChanged: (v) { if (v != null) setState(() => _selectedStatus = v); },
+                              items: const [
+                                DropdownMenuItem(value: 0, child: Text('🔴 Penuh')),
+                                DropdownMenuItem(value: 1, child: Text('🟢 Tersedia')),
+                                DropdownMenuItem(value: 2, child: Text('🟡 Sisa 2 Kamar')),
+                                DropdownMenuItem(value: 3, child: Text('🟡 Sisa 3 Kamar')),
+                                DropdownMenuItem(value: 4, child: Text('🟡 Sisa 4 Kamar')),
+                                DropdownMenuItem(value: 5, child: Text('🟢 Sisa 5 Kamar')),
+                                DropdownMenuItem(value: 6, child: Text('🟢 Sisa 6 Kamar')),
+                                DropdownMenuItem(value: 7, child: Text('🟢 Sisa 7 Kamar')),
+                                DropdownMenuItem(value: 8, child: Text('🟢 Sisa 8 Kamar')),
+                                DropdownMenuItem(value: 9, child: Text('🟢 Sisa 9 Kamar')),
+                                DropdownMenuItem(value: 10, child: Text('🟢 Sisa 10 Kamar')),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                        // Kode Lokasi
+                        Text('Kode Lokasi', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: muted)),
+                        const SizedBox(height: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                          decoration: BoxDecoration(color: bg2, borderRadius: BorderRadius.circular(10), border: Border.all(color: border)),
+                          child: DropdownButtonHideUnderline(
+                            child: DropdownButton<int>(
+                              value: _selectedKodeLokasi,
+                              isExpanded: true,
+                              dropdownColor: card,
+                              style: TextStyle(fontSize: 13, color: textColor),
+                              icon: Icon(Icons.arrow_drop_down_rounded, color: muted),
+                              onChanged: (v) { if (v != null) setState(() => _selectedKodeLokasi = v); },
+                              items: const [
+                                DropdownMenuItem(value: 1, child: Text('📍 1 - Dekat Kampus')),
+                                DropdownMenuItem(value: 2, child: Text('🏙️ 2 - Pusat Kota')),
+                                DropdownMenuItem(value: 3, child: Text('🏘️ 3 - Pinggir Kota')),
+                                DropdownMenuItem(value: 4, child: Text('🚌 4 - Dekat Transportasi Umum')),
+                                DropdownMenuItem(value: 5, child: Text('🏡 5 - Perumahan')),
+                                DropdownMenuItem(value: 6, child: Text('🛒 6 - Dekat Pasar')),
+                                DropdownMenuItem(value: 7, child: Text('🏭 7 - Kawasan Industri')),
+                                DropdownMenuItem(value: 8, child: Text('🛣️ 8 - Pinggir Jalan Utama')),
+                                DropdownMenuItem(value: 9, child: Text('🌿 9 - Pedesaan / Wisata')),
+                                DropdownMenuItem(value: 10, child: Text('📌 10 - Lainnya')),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                        // Wilayah / Kota — searchable
+                        Text('Wilayah / Kota', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: muted)),
+                        const SizedBox(height: 6),
+                        GestureDetector(
+                          onTap: () => _showWilayahPicker(context, isDark, card, border, textColor, muted),
+                          child: Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                            decoration: BoxDecoration(color: bg2, borderRadius: BorderRadius.circular(10), border: Border.all(color: border)),
+                            child: Row(children: [
+                              Expanded(child: Text(
+                                _selectedWilayahNama.isNotEmpty ? _selectedWilayahNama : 'Pilih wilayah/kota...',
+                                style: TextStyle(fontSize: 13, color: _selectedWilayahNama.isNotEmpty ? textColor : muted),
+                              )),
+                              Icon(Icons.search_rounded, size: 18, color: muted),
+                            ]),
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                        _FormField(
                           controller: _deskripsiCtrl,
                           label: 'Deskripsi Kost (Opsional)',
                           hint: 'Ceritakan keunggulan kost ini...',
@@ -409,7 +540,7 @@ class _AddKostScreenState extends State<AddKostScreen> {
                     ),
                     const SizedBox(height: 12),
 
-                    // ─── STEP 3: Fasilitas ────────────────────────────────────
+                    // ─── STEP 3: Fasilitas (Checkbox) ────────────────────────────
                     _SectionCard(
                       title: 'Fasilitas',
                       icon: Icons.checklist_rounded,
@@ -419,21 +550,14 @@ class _AddKostScreenState extends State<AddKostScreen> {
                       onTap: () => setState(() => _currentStep = 2),
                       isActive: _currentStep == 2,
                       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        Text(
-                          'Tuliskan fasilitas yang tersedia, pisahkan dengan koma.',
-                          style: TextStyle(fontSize: 12, color: muted, fontStyle: FontStyle.italic),
-                        ),
+                        Text('Pilih fasilitas yang tersedia:', style: TextStyle(fontSize: 12, color: muted, fontStyle: FontStyle.italic)),
                         const SizedBox(height: 12),
-                        _FormField(
-                          controller: _fasilitasCtrl,
-                          label: 'Fasilitas Kost',
-                          hint: 'WiFi, AC, Kamar Mandi Dalam, Parkir...',
-                          icon: Icons.star_border_rounded,
-                          isDark: isDark, card: card, border: border,
-                          textColor: textColor, muted: muted, bg2: bg2,
-                          maxLines: 2,
-                          validator: (v) => (v == null || v.trim().isEmpty) ? 'Fasilitas wajib diisi' : null,
-                        ),
+                        _facilitySwitch('⚡ Listrik', _fListrik, (v) => setState(() => _fListrik = v), isDark, border),
+                        _facilitySwitch('❄️ AC', _fAc, (v) => setState(() => _fAc = v), isDark, border),
+                        _facilitySwitch('🚿 KM Dalam', _fKmDalam, (v) => setState(() => _fKmDalam = v), isDark, border),
+                        _facilitySwitch('🏍️ Parkir Motor', _fParkir, (v) => setState(() => _fParkir = v), isDark, border),
+                        _facilitySwitch('👕 Laundry', _fLaundry, (v) => setState(() => _fLaundry = v), isDark, border),
+                        _facilitySwitch('📶 WiFi', _fWifi, (v) => setState(() => _fWifi = v), isDark, border),
                       ]),
                     ),
                     const SizedBox(height: 12),
@@ -465,9 +589,17 @@ class _AddKostScreenState extends State<AddKostScreen> {
                               itemBuilder: (_, index) => Stack(children: [
                                 ClipRRect(
                                   borderRadius: BorderRadius.circular(8),
-                                  child: Image.file(
-                                    File(_selectedImages[index].path),
-                                    width: 100, height: 100, fit: BoxFit.cover,
+                                  child: FutureBuilder<Uint8List>(
+                                    future: _selectedImages[index].readAsBytes(),
+                                    builder: (ctx, snap) {
+                                      if (snap.hasData) {
+                                        return Image.memory(
+                                          snap.data!,
+                                          width: 100, height: 100, fit: BoxFit.cover,
+                                        );
+                                      }
+                                      return const SizedBox(width: 100, height: 100);
+                                    },
                                   ),
                                 ),
                                 Positioned(
@@ -545,6 +677,111 @@ class _AddKostScreenState extends State<AddKostScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _facilitySwitch(String label, bool value, ValueChanged<bool> onChanged, bool isDark, Color border) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.bg2Dark : AppColors.bg2Light,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: border),
+      ),
+      child: Row(children: [
+        Expanded(child: Text(label, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: isDark ? AppColors.textDark : AppColors.textLight))),
+        Switch(
+          value: value,
+          onChanged: onChanged,
+          activeColor: AppColors.teal,
+        ),
+      ]),
+    );
+  }
+
+  void _showWilayahPicker(BuildContext context, bool isDark, Color card, Color border, Color textColor, Color muted) {
+    String query = '';
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return StatefulBuilder(builder: (ctx, setStateSheet) {
+          final filtered = _wilayahList.where((w) {
+            final nama = (w['nama_wilayah'] ?? '').toString().toLowerCase();
+            return nama.contains(query.toLowerCase());
+          }).toList();
+
+          return Container(
+            height: MediaQuery.of(context).size.height * 0.6,
+            decoration: BoxDecoration(
+              color: isDark ? AppColors.bgDark : AppColors.bgLight,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+            ),
+            child: Column(children: [
+              const SizedBox(height: 12),
+              Container(width: 40, height: 5, decoration: BoxDecoration(color: Colors.grey.withValues(alpha: 0.3), borderRadius: BorderRadius.circular(10))),
+              const SizedBox(height: 16),
+              Text('Pilih Wilayah / Kota', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textColor)),
+              const SizedBox(height: 12),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: TextField(
+                  onChanged: (v) => setStateSheet(() => query = v),
+                  style: TextStyle(color: textColor),
+                  decoration: InputDecoration(
+                    hintText: 'Cari wilayah/kota...',
+                    hintStyle: TextStyle(color: muted),
+                    prefixIcon: Icon(Icons.search, color: muted),
+                    filled: true,
+                    fillColor: card,
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: border)),
+                    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: border)),
+                    focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.coral)),
+                    contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Expanded(
+                child: filtered.isEmpty
+                  ? Center(child: Text('Tidak ada wilayah ditemukan.', style: TextStyle(color: muted)))
+                  : ListView.builder(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      itemCount: filtered.length,
+                      itemBuilder: (_, i) {
+                        final w = filtered[i];
+                        final isSelected = w['id']?.toString() == _selectedWilayahId;
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          decoration: BoxDecoration(
+                            color: isSelected ? AppColors.tealBg : card,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: isSelected ? AppColors.teal : border),
+                          ),
+                          child: ListTile(
+                            dense: true,
+                            title: Text(w['nama_wilayah'] ?? '-', style: TextStyle(fontWeight: FontWeight.w600, color: textColor)),
+                            subtitle: Text('Kode Lokasi: ${w['kode_lokasi'] ?? '-'}', style: TextStyle(fontSize: 11, color: muted)),
+                            trailing: isSelected ? const Icon(Icons.check_circle_rounded, color: AppColors.teal) : null,
+                            onTap: () {
+                              setState(() {
+                                _selectedWilayahId = w['id']?.toString();
+                                _selectedWilayahNama = w['nama_wilayah'] ?? '';
+                                _selectedKodeLokasi = int.tryParse(w['kode_lokasi']?.toString() ?? '1') ?? 1;
+                              });
+                              Navigator.pop(ctx);
+                            },
+                          ),
+                        );
+                      },
+                    ),
+              ),
+            ]),
+          );
+        });
+      },
     );
   }
 }

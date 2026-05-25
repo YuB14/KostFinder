@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../theme/app_theme.dart';
+import '../../theme/app_theme.dart';
 import '../../widgets/shared_widgets.dart';
 import '../services/api_service.dart';
 import '../../widgets/shared_app_bar.dart';
@@ -451,7 +451,7 @@ class _FavCard extends StatelessWidget {
             ),
           ),
           child: Stack(children: [
-            if (data.foto != null && !data.foto!.toLowerCase().contains('default'))
+            if (data.foto != null && data.foto!.isNotEmpty)
               Positioned.fill(
                 child: Image.network(
                   data.foto!,

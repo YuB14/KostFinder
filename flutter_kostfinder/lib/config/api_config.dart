@@ -1,18 +1,31 @@
+import 'package:flutter/foundation.dart';
+
 class ApiConfig {
   // ── Ganti baseUrl sesuai environment ──────────────────────────
   // Emulator Android  : http://10.0.2.2:8000
   // Device fisik      : http://<IP_KOMPUTER>:8000 (jalankan: php artisan serve --host=0.0.0.0)
-  // IP komputer saat ini: 192.168.1.8
-  static const String baseUrl = 'http://192.168.1.8:8000';
-  static const String apiUrl = '$baseUrl/api';
+  // Flutter Web/Edge  : http://127.0.0.1:8000
+  static String get baseUrl {
+    if (kIsWeb) {
+      return 'http://127.0.0.1:8000';
+    } else {
+      return 'http://10.10.185.127:8000'; // IP komputer Anda untuk Device Fisik
+    }
+  }
+
+  static String get apiUrl => '$baseUrl/api';
 
   // User API endpoints
-  static const String userStats = '$apiUrl/user/stats';
-  static const String userKost = '$apiUrl/user/kost';
-  static const String userReview = '$apiUrl/user/review';
-  static const String userFavorite = '$apiUrl/user/favorite';
-  static const String userPrediksi = '$apiUrl/user/prediksi';
-  static const String userPrediksiStats = '$apiUrl/user/prediksi/stats';
+  static String get userStats => '$apiUrl/user/stats';
+  static String get userKost => '$apiUrl/user/kost';
+  static String get userReview => '$apiUrl/user/review';
+  static String get userFavorite => '$apiUrl/user/favorite';
+  static String get userPrediksi => '$apiUrl/user/prediksi';
+  static String get userPrediksiStats => '$apiUrl/user/prediksi/stats';
+  static String get userPrediksiHealth => '$apiUrl/user/prediksi/health';
+
+  // Wilayah endpoints
+  static String get wilayah => '$apiUrl/wilayah';
 
   static String kostReviews(String kostId) => '$apiUrl/user/kost/$kostId/reviews';
   static String deleteReview(String id) => '$apiUrl/user/review/$id';

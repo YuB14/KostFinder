@@ -60,17 +60,17 @@ class KostPredictor:
             self.cluster_profiles = joblib.load(os.path.join(self.model_dir, 'profiles.pkl'))
             self.scaler           = joblib.load(os.path.join(self.model_dir, 'scaler.pkl'))
             self.is_trained       = True
-            debugPrint("[KostPredictor] Model berhasil dimuat dari disk.")
+            print("[KostPredictor] Model berhasil dimuat dari disk.")
         except Exception as e:
             self.is_trained = False
-            debugPrint(f"[KostPredictor] Model belum ada, pakai rule-based. ({e})")
+            print(f"[KostPredictor] Model belum ada, pakai rule-based. ({e})")
 
     def _save(self):
         os.makedirs(self.model_dir, exist_ok=True)
         joblib.dump(self.kmeans,           os.path.join(self.model_dir, 'kmeans.pkl'))
         joblib.dump(self.cluster_profiles, os.path.join(self.model_dir, 'profiles.pkl'))
         joblib.dump(self.scaler,           os.path.join(self.model_dir, 'scaler.pkl'))
-        debugPrint("[KostPredictor] Model disimpan ke disk.")
+        print("[KostPredictor] Model disimpan ke disk.")
 
     # ──────────────────────────────────────────────
     # Training

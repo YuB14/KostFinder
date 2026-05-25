@@ -160,7 +160,7 @@
                 const maxCount = Math.max(...days.map(d => d.count));
 
                 container.innerHTML = days.map(d => {
-                    const pct = max > 0 ? Math.max(4, Math.round((d.count / max) * 100)) : 4;
+                    const pct = max > 0 && d.count > 0 ? Math.max(4, Math.round((d.count / max) * 100)) : 0;
                     const isMax = d.count === maxCount && maxCount > 0;
                     return `
                 <div class="bar-wrap">

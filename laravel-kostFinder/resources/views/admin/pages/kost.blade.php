@@ -140,7 +140,7 @@
                             <div class="csel-opt" data-val="3" onclick="pickCsel('csel-kadd-kodelok',this)">🏘️ Pinggir Kota</div>
                             <div class="csel-opt" data-val="4" onclick="pickCsel('csel-kadd-kodelok',this)">🚌 Dekat Transportasi</div>
                             <div class="csel-opt" data-val="5" onclick="pickCsel('csel-kadd-kodelok',this)">🏡 Perumahan</div>
-                            <div class="csel-opt" data-val="6" onclick="pickCsel('csel-kadd-kodelok',this)">🛍️ Dekat Pasar/Mall</div>
+                            <div class="csel-opt" data-val="6" onclick="pickCsel('csel-kadd-kodelok',this)">🛍️ Dekat Pasar</div>
                             <div class="csel-opt" data-val="7" onclick="pickCsel('csel-kadd-kodelok',this)">🏭 Kawasan Industri</div>
                             <div class="csel-opt" data-val="8" onclick="pickCsel('csel-kadd-kodelok',this)">🛣️ Pinggir Jalan Utama</div>
                             <div class="csel-opt" data-val="9" onclick="pickCsel('csel-kadd-kodelok',this)">⛰️ Pedesaan/Wisata</div>
@@ -263,7 +263,7 @@
                             <div class="csel-opt" data-val="3" onclick="pickCsel('csel-kedit-kodelok',this)">🏘️ Pinggir Kota</div>
                             <div class="csel-opt" data-val="4" onclick="pickCsel('csel-kedit-kodelok',this)">🚌 Dekat Transportasi</div>
                             <div class="csel-opt" data-val="5" onclick="pickCsel('csel-kedit-kodelok',this)">🏡 Perumahan</div>
-                            <div class="csel-opt" data-val="6" onclick="pickCsel('csel-kedit-kodelok',this)">🛍️ Dekat Pasar/Mall</div>
+                            <div class="csel-opt" data-val="6" onclick="pickCsel('csel-kedit-kodelok',this)">🛍️ Dekat Pasar</div>
                             <div class="csel-opt" data-val="7" onclick="pickCsel('csel-kedit-kodelok',this)">🏭 Kawasan Industri</div>
                             <div class="csel-opt" data-val="8" onclick="pickCsel('csel-kedit-kodelok',this)">🛣️ Pinggir Jalan Utama</div>
                             <div class="csel-opt" data-val="9" onclick="pickCsel('csel-kedit-kodelok',this)">⛰️ Pedesaan/Wisata</div>

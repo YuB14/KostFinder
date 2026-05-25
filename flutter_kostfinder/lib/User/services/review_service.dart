@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../config/api_config.dart';
-import '../models/review_model.dart';
+import '../../models/review_model.dart';
 import 'auth_service.dart';
 
 class ReviewService {

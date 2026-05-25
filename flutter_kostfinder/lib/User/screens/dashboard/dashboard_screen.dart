@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../../theme/app_theme.dart';
+import '../../../theme/app_theme.dart';
 import '../../services/api_service.dart';
 import '../../utils/helpers.dart';
-import '../../providers/auth_provider.dart';
+import '../../../widgets/shared_app_bar.dart';
+import '../kost/user_kost_detail_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -15,8 +15,6 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   bool _isLoading = true;
   String _userName = '';
-  String _userEmail = '';
-  String? _userPhotoUrl;
   int _totalFav = 0, _totalReview = 0, _totalKost = 0;
   List<dynamic> _recentFavs = [];
   List<dynamic> _myReviews = [];
@@ -35,9 +33,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
       if (session != null) {
         final u = session['user'] ?? session;
         _userName = u['name'] ?? 'Pengguna';
-        _userEmail = u['email'] ?? '';
-        final photo = u['profile_picture'];
-        if (photo != null) _userPhotoUrl = ApiService.getImageUrl(photo.toString());
       }
 
       final results = await Future.wait([
@@ -66,12 +61,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     if (mounted) setState(() => _isLoading = false);
   }
 
-  Future<void> _logout() async {
-    if (!mounted) return;
-    // AuthProvider.logout() hapus session + notifyListeners() → AuthWrapper rebuild ke LoginScreen
-    await context.read<AuthProvider>().logout();
-  }
-
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -81,119 +70,115 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final textColor = isDark ? AppColors.textDark : AppColors.textLight;
 
     return Scaffold(
-      body: RefreshIndicator(
-        onRefresh: _loadData,
-        color: AppColors.coral,
-        child: CustomScrollView(
-          slivers: [
-            // ── SliverAppBar gradient ──────────────────────────────
-            SliverAppBar(
-              expandedHeight: 160,
-              floating: false,
-              pinned: true,
-              automaticallyImplyLeading: false,
-              backgroundColor: AppColors.coral,
-              flexibleSpace: FlexibleSpaceBar(
-                background: Container(
-                  decoration: const BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [AppColors.coral, AppColors.coral2],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
+      appBar: const SharedAppBar(),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator(color: AppColors.coral))
+          : RefreshIndicator(
+              onRefresh: _loadData,
+              color: AppColors.coral,
+              child: ListView(
+                padding: const EdgeInsets.all(16),
+                children: [
+                  // ── Welcome Card ──
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [AppColors.coral, AppColors.coral2],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(16),
                     ),
+                    child: Row(children: [
+                      CircleAvatar(
+                        radius: 22,
+                        backgroundColor: Colors.white.withValues(alpha: 0.3),
+                        child: Text(
+                          Helpers.initials(_userName),
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 14),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Halo, ${_userName.split(' ').first}! 👋',
+                                style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w700),
+                              ),
+                              const Text('Selamat datang di KostFinder',
+                                  style: TextStyle(
+                                      color: Colors.white70, fontSize: 12)),
+                            ]),
+                      ),
+                    ]),
                   ),
-                  child: SafeArea(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-                      child: Row(children: [
-                        CircleAvatar(
-                          radius: 24,
-                          backgroundColor: Colors.white.withValues(alpha: 0.3),
-                          backgroundImage: _userPhotoUrl != null ? NetworkImage(_userPhotoUrl!) : null,
-                          child: _userPhotoUrl == null
-                              ? Text(Helpers.initials(_userName),
-                                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 16))
-                              : null,
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisAlignment: MainAxisAlignment.center, children: [
-                            Text('Halo, ${_userName.split(' ').first}! 👋',
-                                style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w700)),
-                            Text(_userEmail, style: const TextStyle(color: Colors.white70, fontSize: 12)),
-                          ]),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.logout_rounded, color: Colors.white),
-                          onPressed: _logout,
-                        ),
-                      ]),
+                  const SizedBox(height: 16),
+
+                  // ── Stat Cards ──
+                  Row(children: [
+                    _statCard('❤️', _totalFav.toString(), 'Favorit',
+                        AppColors.coral, AppColors.coralBg, card, border, textColor),
+                    const SizedBox(width: 10),
+                    _statCard('⭐', _totalReview.toString(), 'Ulasan Saya',
+                        AppColors.yellow, AppColors.yellowBg, card, border, textColor),
+                    const SizedBox(width: 10),
+                    _statCard('🏘️', _totalKost.toString(), 'Total Kost',
+                        AppColors.teal, AppColors.tealBg, card, border, textColor),
+                  ]),
+                  const SizedBox(height: 24),
+
+                  // ── Favorit Terbaru ──
+                  _sectionTitle('❤️ Favorit Terbaru', textColor),
+                  const SizedBox(height: 10),
+                  if (_recentFavs.isEmpty)
+                    _emptyBox('Belum ada favorit', card, border, muted)
+                  else
+                    ..._recentFavs.map((f) => _favRow(f, card, border, muted, textColor)),
+                  const SizedBox(height: 24),
+
+                  // ── Ulasan Saya ──
+                  _sectionTitle('⭐ Ulasan Saya Terbaru', textColor),
+                  const SizedBox(height: 10),
+                  if (_myReviews.isEmpty)
+                    _emptyBox('Belum ada ulasan', card, border, muted)
+                  else
+                    ..._myReviews.map((r) => _reviewRow(r, card, border, muted, textColor)),
+                  const SizedBox(height: 24),
+
+                  // ── Kost Tersedia ──
+                  _sectionTitle('🏘️ Kost Tersedia', textColor),
+                  const SizedBox(height: 10),
+                  GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      crossAxisSpacing: 12,
+                      mainAxisSpacing: 12,
+                      childAspectRatio: 0.85,
                     ),
+                    itemCount: _popularKosts.length,
+                    itemBuilder: (_, i) => _miniKostCard(
+                        _popularKosts[i], card, border, muted, textColor),
                   ),
-                ),
-                title: const Text('Beranda', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Colors.white)),
-                titlePadding: const EdgeInsets.only(left: 20, bottom: 14),
+                  const SizedBox(height: 80),
+                ],
               ),
             ),
-
-            if (_isLoading)
-              const SliverFillRemaining(child: Center(child: CircularProgressIndicator(color: AppColors.coral)))
-            else
-              SliverPadding(
-                padding: const EdgeInsets.all(16),
-                sliver: SliverList(
-                  delegate: SliverChildListDelegate([
-                    // ── Stat Cards ──
-                    Row(children: [
-                      _statCard('❤️', _totalFav.toString(), 'Favorit', AppColors.coral, AppColors.coralBg, card, border, textColor),
-                      const SizedBox(width: 10),
-                      _statCard('⭐', _totalReview.toString(), 'Ulasan Saya', AppColors.yellow, AppColors.yellowBg, card, border, textColor),
-                      const SizedBox(width: 10),
-                      _statCard('🏘️', _totalKost.toString(), 'Total Kost', AppColors.teal, AppColors.tealBg, card, border, textColor),
-                    ]),
-                    const SizedBox(height: 24),
-
-                    // ── Favorit Terbaru ──
-                    _sectionTitle('❤️ Favorit Terbaru', textColor),
-                    const SizedBox(height: 10),
-                    if (_recentFavs.isEmpty)
-                      _emptyBox('Belum ada favorit', card, border, muted)
-                    else
-                      ..._recentFavs.map((f) => _favRow(f, card, border, muted, textColor)),
-                    const SizedBox(height: 24),
-
-                    // ── Ulasan Saya ──
-                    _sectionTitle('⭐ Ulasan Saya Terbaru', textColor),
-                    const SizedBox(height: 10),
-                    if (_myReviews.isEmpty)
-                      _emptyBox('Belum ada ulasan', card, border, muted)
-                    else
-                      ..._myReviews.map((r) => _reviewRow(r, card, border, muted, textColor)),
-                    const SizedBox(height: 24),
-
-                    // ── Kost Tersedia ──
-                    _sectionTitle('🏘️ Kost Tersedia', textColor),
-                    const SizedBox(height: 10),
-                    GridView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2, crossAxisSpacing: 12, mainAxisSpacing: 12, childAspectRatio: 0.85,
-                      ),
-                      itemCount: _popularKosts.length,
-                      itemBuilder: (_, i) => _miniKostCard(_popularKosts[i], card, border, muted, textColor),
-                    ),
-                    const SizedBox(height: 80),
-                  ]),
-                ),
-              ),
-          ],
-        ),
-      ),
     );
   }
 
-  Widget _statCard(String emoji, String value, String label, Color color, Color bgColor, Color card, Color border, Color textColor) {
+  Widget _statCard(String emoji, String value, String label, Color color,
+      Color bgColor, Color card, Color border, Color textColor) {
     return Expanded(
       child: Container(
         padding: const EdgeInsets.all(14),
@@ -201,25 +186,36 @@ class _DashboardScreenState extends State<DashboardScreen> {
           color: card,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(color: border),
-          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 8)],
+          boxShadow: [
+            BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 8)
+          ],
         ),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Container(
             padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(color: bgColor, borderRadius: BorderRadius.circular(10)),
+            decoration: BoxDecoration(
+                color: bgColor, borderRadius: BorderRadius.circular(10)),
             child: Text(emoji, style: const TextStyle(fontSize: 18)),
           ),
           const SizedBox(height: 10),
-          Text(value, style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: textColor)),
+          Text(value,
+              style: TextStyle(
+                  fontSize: 22, fontWeight: FontWeight.w900, color: textColor)),
           const SizedBox(height: 2),
-          Text(label, style: const TextStyle(fontSize: 10, color: AppColors.mutedLight, fontWeight: FontWeight.w600)),
+          Text(label,
+              style: const TextStyle(
+                  fontSize: 10,
+                  color: AppColors.mutedLight,
+                  fontWeight: FontWeight.w600)),
         ]),
       ),
     );
   }
 
   Widget _sectionTitle(String title, Color textColor) {
-    return Text(title, style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: textColor));
+    return Text(title,
+        style: TextStyle(
+            fontSize: 15, fontWeight: FontWeight.w800, color: textColor));
   }
 
   Widget _emptyBox(String msg, Color card, Color border, Color muted) {
@@ -227,88 +223,170 @@ class _DashboardScreenState extends State<DashboardScreen> {
       padding: const EdgeInsets.all(16),
       margin: const EdgeInsets.only(bottom: 8),
       alignment: Alignment.center,
-      decoration: BoxDecoration(color: card, borderRadius: BorderRadius.circular(12), border: Border.all(color: border)),
+      decoration: BoxDecoration(
+          color: card,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: border)),
       child: Text(msg, style: TextStyle(color: muted, fontSize: 13)),
     );
   }
 
-  Widget _favRow(dynamic f, Color card, Color border, Color muted, Color textColor) {
+  Widget _favRow(
+      dynamic f, Color card, Color border, Color muted, Color textColor) {
     final foto = f['kost_foto'] ?? f['foto'];
-    final fotoUrl = foto != null ? ApiService.getImageUrl(foto.toString()) : null;
+    final fotoUrl =
+        foto != null ? ApiService.getImageUrl(foto.toString()) : null;
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(color: card, borderRadius: BorderRadius.circular(12), border: Border.all(color: border)),
+      decoration: BoxDecoration(
+          color: card,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: border)),
       child: Row(children: [
         ClipRRect(
           borderRadius: BorderRadius.circular(8),
-          child: (fotoUrl != null && fotoUrl.isNotEmpty && !fotoUrl.contains('default'))
-              ? Image.network(fotoUrl, width: 44, height: 44, fit: BoxFit.cover,
+          child: (fotoUrl != null &&
+                  fotoUrl.isNotEmpty &&
+                  !fotoUrl.contains('default'))
+              ? Image.network(fotoUrl,
+                  width: 44, height: 44, fit: BoxFit.cover,
                   errorBuilder: (_, __, ___) => _iconBox())
               : _iconBox(),
         ),
         const SizedBox(width: 12),
-        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(f['kost_nama'] ?? '-', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: textColor), maxLines: 1, overflow: TextOverflow.ellipsis),
-          Text('📍 ${f['kost_alamat'] ?? '-'}', style: TextStyle(fontSize: 11, color: muted), maxLines: 1, overflow: TextOverflow.ellipsis),
-        ])),
+        Expanded(
+            child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+              Text(f['kost_nama'] ?? '-',
+                  style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: textColor),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis),
+              Text('📍 ${f['kost_alamat'] ?? '-'}',
+                  style: TextStyle(fontSize: 11, color: muted),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis),
+            ])),
         Text(Helpers.formatRupiah(f['kost_harga'] ?? 0),
-            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.coral)),
+            style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: AppColors.coral)),
       ]),
     );
   }
 
-  Widget _reviewRow(dynamic r, Color card, Color border, Color muted, Color textColor) {
+  Widget _reviewRow(
+      dynamic r, Color card, Color border, Color muted, Color textColor) {
     final rating = (r['rating'] ?? 0) as int;
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(color: card, borderRadius: BorderRadius.circular(12), border: Border.all(color: border)),
+      decoration: BoxDecoration(
+          color: card,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: border)),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
           Expanded(
             child: Text(r['kost_name'] ?? '-',
-                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: textColor),
-                maxLines: 1, overflow: TextOverflow.ellipsis),
+                style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: textColor),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis),
           ),
-          Row(children: List.generate(5, (i) => Icon(
-            i < rating ? Icons.star_rounded : Icons.star_outline_rounded,
-            size: 13, color: i < rating ? AppColors.yellow : muted,
-          ))),
+          Row(
+              children: List.generate(
+                  5,
+                  (i) => Icon(
+                        i < rating
+                            ? Icons.star_rounded
+                            : Icons.star_outline_rounded,
+                        size: 13,
+                        color: i < rating ? AppColors.yellow : muted,
+                      ))),
         ]),
         const SizedBox(height: 4),
-        Text('"${r['komentar'] ?? ''}"', style: TextStyle(fontSize: 12, color: muted), maxLines: 2, overflow: TextOverflow.ellipsis),
+        Text('"${r['komentar'] ?? ''}"',
+            style: TextStyle(fontSize: 12, color: muted),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis),
       ]),
     );
   }
 
-  Widget _miniKostCard(dynamic k, Color card, Color border, Color muted, Color textColor) {
+  Widget _miniKostCard(
+      dynamic k, Color card, Color border, Color muted, Color textColor) {
     final foto = k['foto_kost'] ?? k['foto'];
-    final fotoUrl = foto != null ? ApiService.getImageUrl(foto.toString()) : null;
-    return Container(
-      decoration: BoxDecoration(color: card, borderRadius: BorderRadius.circular(14), border: Border.all(color: border)),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        ClipRRect(
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
-          child: (fotoUrl != null && fotoUrl.isNotEmpty && !fotoUrl.contains('default'))
-              ? Image.network(fotoUrl, height: 90, width: double.infinity, fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => _photoPlaceholder())
-              : _photoPlaceholder(),
-        ),
-        Padding(
-          padding: const EdgeInsets.all(10),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(k['nama_kost'] ?? '-', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: textColor), maxLines: 1, overflow: TextOverflow.ellipsis),
-            Text('📍 ${k['alamat_kost'] ?? '-'}', style: TextStyle(fontSize: 10, color: muted), maxLines: 1, overflow: TextOverflow.ellipsis),
-            const SizedBox(height: 4),
-            Text(Helpers.formatRupiah(k['harga_kost'] ?? 0),
-                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: AppColors.coral)),
-          ]),
-        ),
-      ]),
+    final fotoUrl =
+        foto != null ? ApiService.getImageUrl(foto.toString()) : null;
+    return GestureDetector(
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(
+            builder: (_) => UserKostDetailScreen(kost: k)),
+      ),
+      child: Container(
+        decoration: BoxDecoration(
+            color: card,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: border)),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          ClipRRect(
+            borderRadius:
+                const BorderRadius.vertical(top: Radius.circular(14)),
+            child: (fotoUrl != null &&
+                    fotoUrl.isNotEmpty &&
+                    !fotoUrl.contains('default'))
+                ? Image.network(fotoUrl,
+                    height: 90, width: double.infinity, fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => _photoPlaceholder())
+                : _photoPlaceholder(),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(10),
+            child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(k['nama_kost'] ?? '-',
+                      style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: textColor),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis),
+                  Text('📍 ${k['alamat_kost'] ?? '-'}',
+                      style: TextStyle(fontSize: 10, color: muted),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis),
+                  const SizedBox(height: 4),
+                  Text(Helpers.formatRupiah(k['harga_kost'] ?? 0),
+                      style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.coral)),
+                ]),
+          ),
+        ]),
+      ),
     );
   }
 
-  Widget _iconBox() => Container(width: 44, height: 44, color: AppColors.bg2Light, child: const Icon(Icons.home_rounded, color: AppColors.mutedLight, size: 20));
-  Widget _photoPlaceholder() => Container(height: 90, color: AppColors.bg2Light, child: const Icon(Icons.home_rounded, color: AppColors.mutedLight, size: 32));
+  Widget _iconBox() => Container(
+      width: 44,
+      height: 44,
+      color: AppColors.bg2Light,
+      child: const Icon(Icons.home_rounded,
+          color: AppColors.mutedLight, size: 20));
+  Widget _photoPlaceholder() => Container(
+      height: 90,
+      color: AppColors.bg2Light,
+      child: const Icon(Icons.home_rounded,
+          color: AppColors.mutedLight, size: 32));
 }

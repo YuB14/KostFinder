@@ -41,6 +41,11 @@
 
 {{-- HERO INPUT --}}
 <div class="pred-hero">
+    <div id="ml-status-badge" style="display:inline-flex;align-items:center;gap:6px;padding:5px 14px;border-radius:100px;font-size:11px;font-weight:700;margin-bottom:16px;background:rgba(107,126,148,.1);color:var(--muted)">
+        <span id="ml-status-dot" style="width:8px;height:8px;border-radius:50%;background:var(--muted)"></span>
+        <span id="ml-status-text">Mengecek status ML...</span>
+    </div>
+
     <h2>Prediksi <em>Kost</em> Impianmu 🤖</h2>
     <p>Masukkan harga kost yang sesuai anggaranmu. Model ML akan memprediksi kelas, jenis, status, fasilitas, dan ukuran kamar yang paling sesuai.</p>
 
@@ -52,7 +57,7 @@
     </div>
     <div id="harga-display"></div>
 
-    <button id="btn-prediksi" onclick="jalankanPrediksi()">
+    <button id="btn-prediksi" onclick="jalankanPrediksi()" disabled>
         <span id="btn-label">🤖 Prediksi Sekarang</span>
     </button>
 
@@ -177,6 +182,7 @@
 @push('scripts')
 <script>
 let predSelectedId = null;
+let mlOnline = false;
 
 /* ─── Format Harga ─────────────────────────────────── */
 function fmtHarga(el) {
@@ -188,6 +194,43 @@ function fmtHarga(el) {
 }
 function getRawHarga() {
     return parseInt((document.getElementById('pred-harga').value || '').replace(/\./g, '').replace(/,/g, '')) || 0;
+}
+
+/* ─── Cek Status ML (Flask) ────────────────────────── */
+async function checkMlHealth() {
+    const badge = document.getElementById('ml-status-badge');
+    const dot   = document.getElementById('ml-status-dot');
+    const text  = document.getElementById('ml-status-text');
+    const btn   = document.getElementById('btn-prediksi');
+
+    try {
+        const res  = await fetch('/api/user/prediksi/health');
+        const data = await res.json();
+
+        if (data.success && data.flask_status === 'online') {
+            mlOnline = true;
+            dot.style.background  = '#38A169';
+            dot.style.animation   = 'pulse 1.5s infinite';
+            text.textContent      = '🧠 ML Server Online' + (data.model_trained ? ' — Model Siap' : ' — Model Belum Dilatih');
+            badge.style.background = 'rgba(56,161,105,.1)';
+            badge.style.color      = '#38A169';
+            btn.disabled = false;
+        } else {
+            mlOnline = false;
+            dot.style.background  = '#E53E3E';
+            text.textContent      = '⚠️ ML Server Offline — Jalankan python app.py';
+            badge.style.background = 'rgba(229,62,62,.1)';
+            badge.style.color      = '#E53E3E';
+            btn.disabled = true;
+        }
+    } catch {
+        mlOnline = false;
+        dot.style.background  = '#E53E3E';
+        text.textContent      = '⚠️ ML Server Offline — Jalankan python app.py';
+        badge.style.background = 'rgba(229,62,62,.1)';
+        badge.style.color      = '#E53E3E';
+        btn.disabled = true;
+    }
 }
 
 /* ─── Statistik ─────────────────────────────────────── */
@@ -219,7 +262,7 @@ async function loadStats() {
         }
     } catch { document.getElementById('pred-stats').textContent = 'Gagal memuat statistik.'; }
 }
-document.addEventListener('DOMContentLoaded', loadStats);
+document.addEventListener('DOMContentLoaded', () => { loadStats(); checkMlHealth(); });
 
 /* ─── Jalankan Prediksi ─────────────────────────────── */
 async function jalankanPrediksi() {

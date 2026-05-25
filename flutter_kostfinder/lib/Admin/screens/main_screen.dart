@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
-import '../theme/app_theme.dart';
+import '../../theme/app_theme.dart';
 import 'dashboard_screen.dart';
 import 'kost_screen.dart';
 import 'review_screen.dart';
 import 'favorite_screen.dart';
 import 'user_screen.dart';
-import 'prediction_screen.dart';
 import '../services/api_service.dart';
 
 class MainScreen extends StatefulWidget {
@@ -61,7 +60,6 @@ class _MainScreenState extends State<MainScreen> {
     const KostScreen(),
     const ReviewScreen(),
     const FavoriteScreen(),
-    const PredictionScreen(),
     const UserScreen(),
   ];
 
@@ -71,7 +69,7 @@ class _MainScreenState extends State<MainScreen> {
   ];
   List<_Tab> get _rightTabs => [
     const _Tab(icon: Icons.favorite_rounded, label: 'Favorit', screenIdx: 3),
-    if (_isAdmin) _Tab(icon: Icons.people_rounded, label: 'Pengguna', screenIdx: 5, badge: _totalUserBadge),
+    if (_isAdmin) _Tab(icon: Icons.people_rounded, label: 'Pengguna', screenIdx: 4, badge: _totalUserBadge),
   ];
 
   @override

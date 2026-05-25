@@ -515,7 +515,7 @@
 
 <!-- NAV -->
 <nav>
-  <div class="logo">🏠 Kost<span class="dot">Finder</span></div>
+  <div class="logo"><img src="{{ asset('storage/images/logo-kostFinder.png') }}" alt="KostFinder" style="height:32px;border-radius:8px;object-fit:contain;"> Kost<span class="dot">Finder</span></div>
   <ul>
     <li><a href="#filter">Filter Pintar</a></li>
     <li><a href="#kost">Cari Kost</a></li>
@@ -750,7 +750,7 @@
 
 <!-- FOOTER -->
 <footer>
-  <div class="logo">🏠 Kost<span class="dot">Finder</span></div>
+  <div class="logo"><img src="{{ asset('storage/images/logo-kostFinder.png') }}" alt="KostFinder" style="height:26px;border-radius:6px;object-fit:contain;"> Kost<span class="dot">Finder</span></div>
   <p>© 2025 KostFinder. Dibuat dengan ❤️ di Indonesia.</p>
   <div class="socials">
     <a href="#">𝕏</a>

@@ -3,7 +3,7 @@
 
 @section('content')
     <nav class="topbar">
-        <a href="/" class="logo">🏠 Kost<span class="dot">Finder</span></a>
+        <a href="/" class="logo"><img src="{{ asset('storage/images/logo-kostFinder.png') }}" alt="KostFinder" style="height:30px;border-radius:8px;object-fit:contain;"> Kost<span class="dot">Finder</span></a>
         <a href="/" class="topbar-link">← Kembali ke Beranda</a>
     </nav>
 

@@ -217,15 +217,51 @@ class UserApiController extends Controller
     }
 
     // ═══════════════════════════════════════════════════════
+    // GET /api/user/prediksi/health — cek status Flask ML
+    // ═══════════════════════════════════════════════════════
+    public function prediksiHealth()
+    {
+        $flaskUrl = env('FLASK_ML_URL', 'http://127.0.0.1:5000');
+
+        try {
+            $response = Http::timeout(5)->get("{$flaskUrl}/health");
+
+            if ($response->successful()) {
+                $body = $response->json();
+                return response()->json([
+                    'success'       => true,
+                    'flask_status'  => 'online',
+                    'model_trained' => $body['model_trained'] ?? false,
+                    'flask_url'     => $flaskUrl,
+                ]);
+            }
+
+            return response()->json([
+                'success'      => false,
+                'flask_status' => 'offline',
+                'message'      => 'Flask ML tidak merespon dengan benar.',
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success'      => false,
+                'flask_status' => 'offline',
+                'message'      => 'Server ML (Flask) tidak aktif. Jalankan: python app.py',
+            ]);
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════
     // POST /api/user/prediksi
     //
     // Input  : { harga: float }
     // Proses :
-    //   1. Bangun feature vector dari harga (rule-based fallback values)
-    //   2. Forward feature_vector ke Flask ML (/predict)
-    //   3. Flask return prediksi numerik
-    //   4. Query kost sesuai kelas & range harga, beri skor
-    //   5. Return: { prediksi, rekomendasi_kost }
+    //   1. Forward harga ke Flask ML (/predict) — WAJIB aktif
+    //   2. Flask return prediksi numerik
+    //   3. Query kost sesuai kelas & range harga, beri skor
+    //   4. Return: { prediksi, rekomendasi_kost }
+    //
+    // CATATAN: Tidak ada fallback rule-based.
+    //          Jika Flask mati, return error.
     // ═══════════════════════════════════════════════════════
     public function prediksi(Request $request)
     {
@@ -234,9 +270,9 @@ class UserApiController extends Controller
         $harga    = (float) $request->harga;
         $flaskUrl = env('FLASK_ML_URL', 'http://127.0.0.1:5000');
 
-        // ── 1. Panggil Flask ML ──────────────────────────────
+        // ── 1. Panggil Flask ML (WAJIB aktif) ────────────────
         $prediksi       = null;
-        $sumberPrediksi = 'rule_based';
+        $sumberPrediksi = 'flask_ml';
 
         try {
             $flaskResponse = Http::timeout(8)->post("{$flaskUrl}/predict", [
@@ -248,19 +284,27 @@ class UserApiController extends Controller
                 if (!empty($body['success']) && !empty($body['data'])) {
                     $prediksi       = $body['data'];
                     $sumberPrediksi = $body['data']['source'] ?? 'flask_ml';
+                } else {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Flask ML mengembalikan respons tidak valid.',
+                    ], 502);
                 }
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Flask ML mengembalikan error (HTTP ' . $flaskResponse->status() . ').',
+                ], 502);
             }
         } catch (\Exception $e) {
             Log::warning('[Prediksi] Flask ML tidak tersedia: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Server ML (Flask) tidak aktif. Silakan jalankan python app.py terlebih dahulu.',
+            ], 503);
         }
 
-        // ── 2. Fallback rule-based jika Flask gagal ──────────
-        if (!$prediksi) {
-            $prediksi       = $this->ruleBased($harga);
-            $sumberPrediksi = 'rule_based';
-        }
-
-        // ── 3. Mapping numerik → label display ───────────────
+        // ── 2. Mapping numerik → label display ───────────────
         $tipeKosLabels = Kost::tipeKosLabel();
         $kelasLabels   = Kost::kelasLabel();
         $lokasiLabels  = Kost::kodeLokasiLabel();
@@ -270,7 +314,7 @@ class UserApiController extends Controller
         $prediksi['status_label']   = Kost::statusLabel((int) ($prediksi['status']  ?? 1));
         $prediksi['lokasi_label']   = $lokasiLabels[(int) ($prediksi['kode_lokasi'] ?? 1)]  ?? '';
 
-        // ── 4. Query kost cocok (status tersedia, kelas cocok, range harga ±35%) ──
+        // ── 3. Query kost cocok (kelas cocok, range harga ±35%) ──
         $margin   = 0.35;
         $hargaMin = $harga * (1 - $margin);
         $hargaMax = $harga * (1 + $margin);
@@ -286,7 +330,7 @@ class UserApiController extends Controller
             return $h >= $hargaMin && $h <= $hargaMax;
         });
 
-        // ── 5. Scoring ────────────────────────────────────────
+        // ── 4. Scoring ────────────────────────────────────────
         $tipeKosPred = (int) ($prediksi['tipe_kos']    ?? 0);
         $fasBinary   = [
             'listrik'           => (int) ($prediksi['listrik']           ?? 0),
@@ -300,20 +344,16 @@ class UserApiController extends Controller
         $scored = $kosts->map(function ($k) use ($harga, $fasBinary, $tipeKosPred, $kelasLabels, $tipeKosLabels, $lokasiLabels) {
             $id = (string) ($k->_id ?? $k->id ?? '');
 
-            // Skor fasilitas binary (+8 per item yang sama)
             $skorFas = 0;
             foreach ($fasBinary as $fasKey => $fasVal) {
                 if ($fasVal === 1 && (int) ($k->$fasKey ?? 0) === 1) $skorFas += 8;
             }
 
-            // Skor harga (kedekatan ke input, max 50)
             $h         = (float) ($k->harga_kost ?? 0);
             $skorHarga = $harga > 0 ? max(0, (1 - abs($h - $harga) / max($harga, 1)) * 50) : 0;
 
-            // Skor kecocokan tipe_kos (+10 jika sama)
             $skorTipe = ($tipeKosPred > 0 && (int) ($k->tipe_kos ?? 0) === $tipeKosPred) ? 10 : 0;
 
-            // Skor rating
             $reviews     = $k->reviews ?? collect();
             $reviewCount = is_countable($reviews) ? count($reviews) : 0;
             $avgRating   = $reviewCount > 0 ? round(collect($reviews)->avg('rating'), 2) : 0;
@@ -369,56 +409,5 @@ class UserApiController extends Controller
             'data'     => $result,
             'meta'     => ['max_skor' => $maxSkor, 'total_cocok' => $kosts->count()],
         ]);
-    }
-
-    // ── Rule-based fallback (numerik) ────────────────────────────
-    private function ruleBased(float $harga): array
-    {
-        if ($harga <= 700_000) {
-            return [
-                'kelas'             => 1,   // ekonomi
-                'tipe_kos'          => 3,   // campur
-                'luas_kamar'        => 9.0, // 3x3
-                'status'            => 1,
-                'kode_lokasi'       => 3,   // pinggir kota
-                'listrik'           => 1,
-                'ac'                => 0,
-                'kamar_mandi_dalam' => 0,
-                'parkir_motor'      => 1,
-                'laundry'           => 0,
-                'wifi'              => 0,
-                'source'            => 'rule_based',
-            ];
-        } elseif ($harga <= 1_500_000) {
-            return [
-                'kelas'             => 2,   // standar
-                'tipe_kos'          => 3,   // campur
-                'luas_kamar'        => 12.0,// 3x4
-                'status'            => 1,
-                'kode_lokasi'       => 1,   // dekat kampus
-                'listrik'           => 1,
-                'ac'                => 0,
-                'kamar_mandi_dalam' => 1,
-                'parkir_motor'      => 1,
-                'laundry'           => 0,
-                'wifi'              => 1,
-                'source'            => 'rule_based',
-            ];
-        } else {
-            return [
-                'kelas'             => 3,   // premium
-                'tipe_kos'          => 3,   // campur
-                'luas_kamar'        => 16.0,// 4x4
-                'status'            => 1,
-                'kode_lokasi'       => 2,   // pusat kota
-                'listrik'           => 1,
-                'ac'                => 1,
-                'kamar_mandi_dalam' => 1,
-                'parkir_motor'      => 1,
-                'laundry'           => 1,
-                'wifi'              => 1,
-                'source'            => 'rule_based',
-            ];
-        }
     }
 }

@@ -1,8 +1,10 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../theme/app_theme.dart';
-import '../../providers/auth_provider.dart';
-import 'register_screen.dart';
+import '../../User/providers/auth_provider.dart';
+import '../../User/services/api_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -14,17 +16,32 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+
+  // Login controllers
   final _loginEmailCtrl = TextEditingController();
   final _loginPwCtrl = TextEditingController();
   bool _pwVisible = false;
   bool _isLoading = false;
   String _error = '';
 
+  // Register controllers
+  final _regNameCtrl = TextEditingController();
+  final _regEmailCtrl = TextEditingController();
+  final _regPwCtrl = TextEditingController();
+  bool _regObscure = true;
+  bool _regLoading = false;
+  String _regError = '';
+  Uint8List? _imageBytes;
+  String? _imageName;
+
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
-    _tabController.addListener(() => setState(() => _error = ''));
+    _tabController.addListener(() => setState(() {
+      _error = '';
+      _regError = '';
+    }));
   }
 
   @override
@@ -32,6 +49,9 @@ class _LoginScreenState extends State<LoginScreen>
     _tabController.dispose();
     _loginEmailCtrl.dispose();
     _loginPwCtrl.dispose();
+    _regNameCtrl.dispose();
+    _regEmailCtrl.dispose();
+    _regPwCtrl.dispose();
     super.dispose();
   }
 
@@ -55,6 +75,58 @@ class _LoginScreenState extends State<LoginScreen>
       setState(() => _error = 'Koneksi gagal: $e');
     }
     if (mounted) setState(() => _isLoading = false);
+  }
+
+  Future<void> _pickImage() async {
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 80);
+    if (picked != null) {
+      final bytes = await picked.readAsBytes();
+      setState(() {
+        _imageBytes = bytes;
+        _imageName = picked.name;
+      });
+    }
+  }
+
+  Future<void> _handleRegister() async {
+    if (_regNameCtrl.text.isEmpty || _regEmailCtrl.text.isEmpty || _regPwCtrl.text.isEmpty) {
+      setState(() => _regError = 'Semua field wajib diisi');
+      return;
+    }
+    setState(() { _regLoading = true; _regError = ''; });
+    try {
+      final res = await ApiService.register(
+        name: _regNameCtrl.text,
+        email: _regEmailCtrl.text,
+        password: _regPwCtrl.text,
+        profilePictureBytes: _imageBytes,
+        profilePictureName: _imageName,
+      );
+      if (!mounted) return;
+      if (res['message'] == 'Register berhasil') {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Registrasi berhasil! Silakan login.')),
+        );
+        // Reset form & pindah ke tab login
+        _regNameCtrl.clear();
+        _regEmailCtrl.clear();
+        _regPwCtrl.clear();
+        setState(() {
+          _imageBytes = null;
+          _imageName = null;
+        });
+        _tabController.animateTo(0);
+      } else {
+        final errors = res['errors'];
+        String msg = res['message'] ?? 'Registrasi gagal';
+        if (errors != null) msg = (errors as Map).values.expand((e) => e as List).join('\n');
+        setState(() => _regError = msg);
+      }
+    } catch (e) {
+      setState(() => _regError = 'Koneksi gagal: $e');
+    }
+    if (mounted) setState(() => _regLoading = false);
   }
 
   @override
@@ -122,11 +194,15 @@ class _LoginScreenState extends State<LoginScreen>
                 boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 20)],
               ),
               padding: const EdgeInsets.all(24),
-              child: SizedBox(
-                height: 340,
-                child: TabBarView(
-                  controller: _tabController,
-                  children: [_buildLoginForm(isDark, muted, textColor), _buildRegisterTab(isDark, muted, textColor)],
+              child: AnimatedSize(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+                child: IndexedStack(
+                  index: _tabController.index,
+                  children: [
+                    _buildLoginForm(isDark, muted, textColor),
+                    _buildRegisterForm(isDark, muted, textColor),
+                  ],
                 ),
               ),
             ),
@@ -166,27 +242,63 @@ class _LoginScreenState extends State<LoginScreen>
     ]);
   }
 
-  Widget _buildRegisterTab(bool isDark, Color muted, Color textColor) {
+  Widget _buildRegisterForm(bool isDark, Color muted, Color textColor) {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Text('Buat Akun Gratis ✨', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: textColor)),
       const SizedBox(height: 4),
       Text('Bergabung dengan ribuan pencari kost', style: TextStyle(color: muted, fontSize: 13)),
-      const SizedBox(height: 24),
+      const SizedBox(height: 20),
+      // Foto Profil
+      Center(
+        child: GestureDetector(
+          onTap: _pickImage,
+          child: CircleAvatar(
+            radius: 42,
+            backgroundColor: AppColors.coralBg,
+            backgroundImage: _imageBytes != null ? MemoryImage(_imageBytes!) : null,
+            child: _imageBytes == null
+                ? Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                    const Icon(Icons.camera_alt, color: AppColors.coral, size: 24),
+                    const SizedBox(height: 2),
+                    Text('Foto Profil', style: TextStyle(fontSize: 10, color: muted)),
+                  ])
+                : null,
+          ),
+        ),
+      ),
+      const SizedBox(height: 16),
+      _buildTextField(_regNameCtrl, 'Nama Lengkap', Icons.person_outline, isDark: isDark),
+      const SizedBox(height: 12),
+      _buildTextField(_regEmailCtrl, 'Email', Icons.email_outlined, keyboardType: TextInputType.emailAddress, isDark: isDark),
+      const SizedBox(height: 12),
+      _buildTextField(_regPwCtrl, 'Password', Icons.lock_outline, isPassword: true, isDark: isDark, isRegister: true),
+      if (_regError.isNotEmpty) ...[
+        const SizedBox(height: 10),
+        Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(color: const Color(0xFFE53E3E).withValues(alpha: 0.08), borderRadius: BorderRadius.circular(8)),
+          child: Text(_regError, style: const TextStyle(color: Color(0xFFE53E3E), fontSize: 12)),
+        ),
+      ],
+      const SizedBox(height: 16),
       SizedBox(
         width: double.infinity,
         child: ElevatedButton(
-          onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RegisterScreen())),
-          child: const Text('Daftar Sekarang →', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+          onPressed: _regLoading ? null : _handleRegister,
+          child: _regLoading
+              ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+              : const Text('Daftar Sekarang →', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
         ),
       ),
     ]);
   }
 
-  Widget _buildTextField(TextEditingController ctrl, String hint, IconData icon, {bool isPassword = false, TextInputType? keyboardType, required bool isDark}) {
+  Widget _buildTextField(TextEditingController ctrl, String hint, IconData icon, {bool isPassword = false, TextInputType? keyboardType, required bool isDark, bool isRegister = false}) {
     final muted = isDark ? AppColors.mutedDark : AppColors.mutedLight;
+    final obscure = isPassword ? (isRegister ? _regObscure : !_pwVisible) : false;
     return TextField(
       controller: ctrl,
-      obscureText: isPassword && !_pwVisible,
+      obscureText: obscure,
       keyboardType: keyboardType,
       style: TextStyle(fontSize: 14, color: isDark ? AppColors.textDark : AppColors.textLight),
       decoration: InputDecoration(
@@ -195,8 +307,19 @@ class _LoginScreenState extends State<LoginScreen>
         prefixIcon: Icon(icon, color: muted, size: 20),
         suffixIcon: isPassword
             ? IconButton(
-                icon: Icon(_pwVisible ? Icons.visibility_off : Icons.visibility, size: 20, color: muted),
-                onPressed: () => setState(() => _pwVisible = !_pwVisible),
+                icon: Icon(
+                  isRegister
+                    ? (_regObscure ? Icons.visibility_off : Icons.visibility)
+                    : (_pwVisible ? Icons.visibility_off : Icons.visibility),
+                  size: 20, color: muted,
+                ),
+                onPressed: () => setState(() {
+                  if (isRegister) {
+                    _regObscure = !_regObscure;
+                  } else {
+                    _pwVisible = !_pwVisible;
+                  }
+                }),
               )
             : null,
       ),

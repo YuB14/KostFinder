@@ -5,7 +5,7 @@
 ///   status    : 0=Penuh, 1=Tersedia, 2+=sisa kamar
 ///   kode_lokasi: 1–10 (lihat [kodeLokasLabel])
 ///   fasilitas : listrik, ac, kamar_mandi_dalam, parkir_motor, laundry, wifi (0/1)
-import '../../config/api_config.dart';
+import '../config/api_config.dart';
 
 class KostModel {
   final String id;

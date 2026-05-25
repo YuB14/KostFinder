@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import '../theme/app_theme.dart';
+import '../../theme/app_theme.dart';
 import '../../widgets/shared_widgets.dart';
 import '../services/api_service.dart';
 import '../../widgets/shared_app_bar.dart';
+import '../../widgets/kost_picker_dialog.dart';
 
 class ReviewScreen extends StatefulWidget {
   const ReviewScreen({super.key});
@@ -13,6 +14,7 @@ class ReviewScreen extends StatefulWidget {
 
 class _ReviewScreenState extends State<ReviewScreen> {
   String _activeFilter = 'Semua';
+  String _searchQuery = '';
   bool _isLoading = true;
 
   List<dynamic> _allReviews = [];
@@ -218,38 +220,55 @@ class _ReviewScreenState extends State<ReviewScreen> {
                     ),
                     const SizedBox(height: 14),
 
-                    // Kost dropdown
+                    // Kost picker with search
                     Text('Kost',
                         style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: muted)),
                     const SizedBox(height: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: bg2,
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: border),
-                      ),
-                      child: DropdownButtonHideUnderline(
-                        child: DropdownButton<String>(
-                          value: tempKostId,
-                          hint: Text('Pilih kost...',
-                              style: TextStyle(fontSize: 13, color: muted)),
-                          isExpanded: true,
-                          dropdownColor: card,
-                          style: TextStyle(fontSize: 13, color: textColor),
-                          icon: Icon(Icons.arrow_drop_down_rounded, color: muted),
-                          // ✅ Kost dropdown di-disable saat edit (kost_id tidak boleh diubah)
-                          onChanged: isEdit
-                              ? null
-                              : (v) {
-                                  if (v != null) setStateSheet(() => tempKostId = v);
-                                },
-                          items: _kosts.map<DropdownMenuItem<String>>((k) {
-                            return DropdownMenuItem<String>(
-                              value: k['id'].toString(),
-                              child: Text(k['nama_kost'] ?? k['nama'] ?? 'Unknown Kost'),
-                            );
-                          }).toList(),
+                    GestureDetector(
+                      onTap: isEdit
+                          ? null
+                          : () async {
+                              final selected = await KostPickerDialog.show(
+                                context,
+                                kosts: _kosts,
+                                selectedKostId: tempKostId,
+                              );
+                              if (selected != null) {
+                                setStateSheet(() {
+                                  tempKostId = selected['id'].toString();
+                                });
+                              }
+                            },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: bg2,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: border),
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                tempKostId != null
+                                    ? (_kosts.firstWhere(
+                                        (k) => k['id'].toString() == tempKostId,
+                                        orElse: () => {'nama_kost': 'Unknown'},
+                                      )['nama_kost'] ?? 'Unknown')
+                                    : 'Pilih kost...',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: tempKostId != null ? textColor : muted,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            Icon(
+                              isEdit ? Icons.lock_rounded : Icons.search_rounded,
+                              size: 16,
+                              color: muted,
+                            ),
+                          ],
                         ),
                       ),
                     ),
@@ -454,9 +473,12 @@ class _ReviewScreenState extends State<ReviewScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final textColor = isDark ? AppColors.textDark : AppColors.textLight;
 
-    final filteredReviews = _activeFilter == 'Semua'
-        ? _allReviews
-        : _allReviews.where((r) => r['status'] == _activeFilter).toList();
+    final filteredReviews = _allReviews.where((r) {
+      final matchesFilter = _activeFilter == 'Semua' || r['status'] == _activeFilter;
+      final matchesSearch = _searchQuery.isEmpty ||
+          (r['kost_name'] ?? '').toString().toLowerCase().contains(_searchQuery.toLowerCase());
+      return matchesFilter && matchesSearch;
+    }).toList();
 
     return Scaffold(
       appBar: const SharedAppBar(),
@@ -600,6 +622,24 @@ class _ReviewScreenState extends State<ReviewScreen> {
                         ),
                       ),
                     ],
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Search bar for kost name
+                  TextField(
+                    onChanged: (v) => setState(() => _searchQuery = v),
+                    style: TextStyle(color: textColor),
+                    decoration: InputDecoration(
+                      hintText: 'Cari berdasarkan nama kost...',
+                      hintStyle: TextStyle(color: isDark ? AppColors.mutedDark : AppColors.mutedLight),
+                      prefixIcon: Icon(Icons.search, color: isDark ? AppColors.mutedDark : AppColors.mutedLight),
+                      filled: true,
+                      fillColor: isDark ? AppColors.cardDark : AppColors.cardLight,
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: isDark ? AppColors.borderDark : AppColors.borderLight)),
+                      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: isDark ? AppColors.borderDark : AppColors.borderLight)),
+                      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.coral)),
+                      contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
+                    ),
                   ),
                   const SizedBox(height: 16),
 

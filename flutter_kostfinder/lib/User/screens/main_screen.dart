@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../theme/app_theme.dart';
+import '../../theme/app_theme.dart';
 import 'dashboard/dashboard_screen.dart';
 import 'kost/kost_screen.dart';
 import 'favorite/favorite_screen.dart';

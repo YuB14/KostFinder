@@ -62,5 +62,6 @@ Route::prefix('user')->middleware('api.token')->group(function () {
 
     // Prediksi ML
     Route::get('prediksi/stats',   [UserApiController::class, 'prediksiStats']);
+    Route::get('prediksi/health',  [UserApiController::class, 'prediksiHealth']);
     Route::post('prediksi',        [UserApiController::class, 'prediksi']);
 });

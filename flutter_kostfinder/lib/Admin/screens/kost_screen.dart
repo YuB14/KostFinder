@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../theme/app_theme.dart';
+import '../../theme/app_theme.dart';
 import '../../widgets/shared_widgets.dart';
 import 'add_kost_screen.dart';
 import 'kost_detail_screen.dart';
@@ -53,27 +53,16 @@ class _KostScreenState extends State<KostScreen> {
   }
 
   KostData _parseKost(Map<String, dynamic> k) {
-    final rawHarga = k['harga_kost'] ?? k['harga'];
-    final harga = double.tryParse(rawHarga?.toString() ?? '0') ?? 0.0;
-    
-    String kelas = 'Standar';
-    if (harga <= 700000) {
-      kelas = 'Ekonomi';
-    } else if (harga <= 1200000) {
-      kelas = 'Standar';
-    } else {
-      kelas = 'Premium';
-    }
-    String jenisKostStr = k['jenis_kost_label']?.toString() ?? k['tipe_kos_label']?.toString() ?? k['jenis_kost']?.toString() ?? k['tipe_kos']?.toString() ?? '';
-    String jenisKost = 'Bebas';
-    if (jenisKostStr == '1' || jenisKostStr.toLowerCase() == 'pria') jenisKost = 'Pria';
-    else if (jenisKostStr == '2' || jenisKostStr.toLowerCase() == 'wanita') jenisKost = 'Wanita';
-    else if (jenisKostStr == '3' || jenisKostStr.toLowerCase() == 'bebas' || jenisKostStr.toLowerCase() == 'campur') jenisKost = 'Bebas';
+    // Use labels from Laravel KostResource directly
+    final String kelas = k['kelas_label']?.toString() ?? 'Ekonomi';
+    final String jenisKost = k['tipe_kos_label']?.toString() ?? 'Campur';
+    final String statusLabel = k['status_label']?.toString() ?? 'Tersedia';
+    final String lokasiLabel = k['lokasi_label']?.toString() ?? '';
+    final String wilayahNama = k['wilayah_nama']?.toString() ?? '';
 
     Color iconColor = AppColors.teal;
     IconData icon = Icons.home_work_rounded;
     String tierType = 'teal';
-    String tier = kelas;
 
     if (kelas == 'Ekonomi') {
       iconColor = AppColors.coral;
@@ -89,27 +78,27 @@ class _KostScreenState extends State<KostScreen> {
       final numValue = double.tryParse(h?.toString() ?? '0') ?? 0;
       return NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0).format(numValue);
     }
-    
+
+    // Build facility list from binary fields
     final List<String> fasList = [];
-    final rawFas = k['fasilitas']?.toString() ?? '';
-    if (rawFas.isNotEmpty) {
-      fasList.addAll(rawFas.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty));
-    } else {
-      if (k['wifi'] == 1 || k['wifi'] == '1') fasList.add('WiFi');
-      if (k['ac'] == 1 || k['ac'] == '1') fasList.add('AC');
-      if (k['kamar_mandi_dalam'] == 1 || k['kamar_mandi_dalam'] == '1') fasList.add('Kamar Mandi Dalam');
-      if (k['parkir_motor'] == 1 || k['parkir_motor'] == '1') fasList.add('Parkir Motor');
-      if (k['laundry'] == 1 || k['laundry'] == '1') fasList.add('Laundry');
-      if (k['listrik'] == 1 || k['listrik'] == '1') fasList.add('Listrik');
-    }
+    if (k['listrik'] == 1 || k['listrik'] == '1') fasList.add('Listrik');
+    if (k['ac'] == 1 || k['ac'] == '1') fasList.add('AC');
+    if (k['kamar_mandi_dalam'] == 1 || k['kamar_mandi_dalam'] == '1') fasList.add('KM Dalam');
+    if (k['parkir_motor'] == 1 || k['parkir_motor'] == '1') fasList.add('Parkir Motor');
+    if (k['laundry'] == 1 || k['laundry'] == '1') fasList.add('Laundry');
+    if (k['wifi'] == 1 || k['wifi'] == '1') fasList.add('WiFi');
+
+    final fotoUrl = ApiService.getImageUrl(k['foto_kost']?.toString());
 
     return KostData(
+      id: k['id']?.toString() ?? '',
+      foto: (fotoUrl.isNotEmpty) ? fotoUrl : null,
       iconData: icon,
       iconColor: iconColor,
       name: k['nama_kost'] ?? '-',
       location: k['alamat_kost'] ?? '-',
       price: formatCurrency(k['harga_kost']),
-      tier: tier,
+      tier: kelas,
       tierType: tierType,
       rating: k['avg_rating']?.toString() ?? '0.0',
       reviews: k['reviews_count']?.toString() ?? '0',
@@ -117,11 +106,24 @@ class _KostScreenState extends State<KostScreen> {
       ownerNumber: k['nomor_telepon'] ?? '-',
       type: jenisKost,
       roomClass: kelas,
-      description: k['deskripsi'] ?? 'Kosong',
+      description: k['deskripsi'] ?? '',
       facilities: fasList,
-      id: k['id']?.toString() ?? '',
-      foto: ApiService.getImageUrl(k['foto_kost']?.toString()),
-      status: k['status']?.toString() ?? 'Aktif',
+      status: statusLabel,
+      // New fields from Laravel KostResource
+      luasKamar: double.tryParse(k['luas_kamar']?.toString() ?? '0') ?? 0,
+      kodeLokasi: int.tryParse(k['kode_lokasi']?.toString() ?? '1') ?? 1,
+      lokasiLabel: lokasiLabel,
+      wilayahNama: wilayahNama,
+      wilayahId: k['wilayah_id']?.toString() ?? '',
+      statusInt: int.tryParse(k['status']?.toString() ?? '1') ?? 1,
+      tipeKosInt: int.tryParse(k['tipe_kos']?.toString() ?? '3') ?? 3,
+      hargaRaw: double.tryParse(k['harga_kost']?.toString() ?? '0') ?? 0,
+      bListrik: (k['listrik'] == 1 || k['listrik'] == '1') ? 1 : 0,
+      bAc: (k['ac'] == 1 || k['ac'] == '1') ? 1 : 0,
+      bKmDalam: (k['kamar_mandi_dalam'] == 1 || k['kamar_mandi_dalam'] == '1') ? 1 : 0,
+      bParkir: (k['parkir_motor'] == 1 || k['parkir_motor'] == '1') ? 1 : 0,
+      bLaundry: (k['laundry'] == 1 || k['laundry'] == '1') ? 1 : 0,
+      bWifi: (k['wifi'] == 1 || k['wifi'] == '1') ? 1 : 0,
     );
   }
 
@@ -343,7 +345,17 @@ class _KostGridCard extends StatelessWidget {
           child: Stack(fit: StackFit.expand, children: [
             // Foto full cover, fallback gradient + icon
             if (kost.foto != null)
-              Image.network(kost.foto!, fit: BoxFit.cover)
+              Image.network(kost.foto!, fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft, end: Alignment.bottomRight,
+                      colors: [bg2, isDark ? const Color(0xFF243447) : const Color(0xFFC5D8EE)],
+                    ),
+                  ),
+                  child: Center(child: Icon(kost.iconData, size: 28, color: kost.iconColor)),
+                ),
+              )
             else
               Container(
                 decoration: BoxDecoration(
@@ -489,7 +501,12 @@ class _KostListCard extends StatelessWidget {
           child: SizedBox(
             width: 54, height: 54,
             child: kost.foto != null
-                ? Image.network(kost.foto!, fit: BoxFit.cover)
+                ? Image.network(kost.foto!, fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
+                      color: kost.iconColor.withValues(alpha: 0.1),
+                      child: Icon(kost.iconData, size: 26, color: kost.iconColor),
+                    ),
+                  )
                 : Container(
                     color: kost.iconColor.withValues(alpha: 0.1),
                     child: Icon(kost.iconData, size: 26, color: kost.iconColor),
@@ -595,6 +612,18 @@ class KostData {
   final String ownerNumber, type, roomClass, description, status;
   final List<String> facilities;
 
+  // ── New fields from Laravel KostResource ────────────────────────────────
+  final double luasKamar;
+  final int kodeLokasi;
+  final String lokasiLabel;
+  final String wilayahNama;
+  final String wilayahId;
+  final int statusInt;
+  final int tipeKosInt;
+  final double hargaRaw;
+  // Binary facilities
+  final int bListrik, bAc, bKmDalam, bParkir, bLaundry, bWifi;
+
   const KostData({
     required this.id, this.foto, required this.iconData, required this.iconColor,
     required this.name, required this.location, required this.price,
@@ -602,5 +631,19 @@ class KostData {
     required this.reviews, required this.tags, required this.ownerNumber,
     required this.type, required this.roomClass, required this.description,
     required this.facilities, required this.status,
+    this.luasKamar = 0,
+    this.kodeLokasi = 1,
+    this.lokasiLabel = '',
+    this.wilayahNama = '',
+    this.wilayahId = '',
+    this.statusInt = 1,
+    this.tipeKosInt = 3,
+    this.hargaRaw = 0,
+    this.bListrik = 1,
+    this.bAc = 0,
+    this.bKmDalam = 0,
+    this.bParkir = 0,
+    this.bLaundry = 0,
+    this.bWifi = 0,
   });
 }

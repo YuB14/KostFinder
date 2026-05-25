@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../config/api_config.dart';
@@ -49,6 +50,8 @@ class ApiService {
     required String email,
     required String password,
     String? profilePicturePath,
+    Uint8List? profilePictureBytes,
+    String? profilePictureName,
   }) async {
     final request = http.MultipartRequest(
       'POST',
@@ -58,7 +61,13 @@ class ApiService {
     request.fields['name'] = name;
     request.fields['email'] = email;
     request.fields['password'] = password;
-    if (profilePicturePath != null) {
+    if (profilePictureBytes != null) {
+      request.files.add(http.MultipartFile.fromBytes(
+        'profile_picture',
+        profilePictureBytes,
+        filename: profilePictureName ?? 'profile.jpg',
+      ));
+    } else if (profilePicturePath != null) {
       request.files.add(await http.MultipartFile.fromPath(
           'profile_picture', profilePicturePath));
     }
@@ -198,5 +207,16 @@ class ApiService {
       Uri.parse('${ApiConfig.apiUrl}/review/$id'),
       headers: await _headers(),
     );
+  }
+
+  // ── WILAYAH ─────────────────────────────────────────────────────
+
+  static Future<List<dynamic>> getWilayahs() async {
+    final res = await http.get(
+      Uri.parse(ApiConfig.wilayah),
+      headers: await _headers(),
+    );
+    final data = jsonDecode(res.body);
+    return data['data'] ?? [];
   }
 }

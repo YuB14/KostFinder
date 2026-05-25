@@ -49,6 +49,7 @@ Route::middleware('auth')->prefix('w/user')->group(function () {
     Route::post('favorite',                [\App\Http\Controllers\Api\User\UserApiController::class, 'favoriteStore']);
     Route::delete('favorite/{id}',         [\App\Http\Controllers\Api\User\UserApiController::class, 'favoriteDestroy']);
     Route::get('prediksi/stats',           [\App\Http\Controllers\Api\User\UserApiController::class, 'prediksiStats']);
+    Route::get('prediksi/health',          [\App\Http\Controllers\Api\User\UserApiController::class, 'prediksiHealth']);
     Route::post('prediksi',                [\App\Http\Controllers\Api\User\UserApiController::class, 'prediksi']);
 });
 

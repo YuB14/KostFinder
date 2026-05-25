@@ -1,6 +1,6 @@
 <aside class="sidebar" id="sidebar">
     <div class="sidebar-logo">
-        <div class="logo-icon">🏠</div>
+        <div class="logo-icon"><img src="{{ asset('storage/images/logo-kostFinder.png') }}" alt="KostFinder" style="width:36px;height:36px;border-radius:10px;object-fit:cover;"></div>
         <div class="wordmark">Kost<span>Finder</span>
             <div style="font-size:9px;font-weight:400;color:var(--muted);margin-top:1px;white-space:nowrap">Platform Kost Terpercaya</div>
         </div>

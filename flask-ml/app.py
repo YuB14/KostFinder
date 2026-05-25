@@ -123,8 +123,8 @@ def train():
 
 # ── Main ────────────────────────────────────────────────────────
 if __name__ == '__main__':
-    debugPrint(f"[Flask ML] Berjalan di http://127.0.0.1:5000")
-    debugPrint(f"[Flask ML] Laravel URL: {LARAVEL_URL}")
-    debugPrint(f"[Flask ML] Model sudah dilatih: {predictor.is_trained}")
-    debugPrint(f"[Flask ML] Feature columns: {FEATURE_COLUMNS}")
+    print(f"[Flask ML] Berjalan di http://127.0.0.1:5000")
+    print(f"[Flask ML] Laravel URL: {LARAVEL_URL}")
+    print(f"[Flask ML] Model sudah dilatih: {predictor.is_trained}")
+    print(f"[Flask ML] Feature columns: {FEATURE_COLUMNS}")
     app.run(debug=True, host='0.0.0.0', port=5000)
