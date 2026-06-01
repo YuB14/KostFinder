@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\LandingController;
 
 // ─── Halaman Auth (hanya untuk tamu/belum login) ──────────────
 Route::middleware('guest')->group(function () {
@@ -35,7 +36,6 @@ Route::middleware('auth')->prefix('user')->name('user.')->group(function () {
 });
 
 // ─── Landing Page ──────────────────────────────────────────────
-Route::get('/', function () {
-    return view('index');
-});
+Route::get('/',       [LandingController::class, 'index']);
+Route::get('/search', [LandingController::class, 'search'])->name('landing.search');
 
