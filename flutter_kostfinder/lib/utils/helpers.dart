@@ -1,6 +1,26 @@
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class Helpers {
+  // ── Launch WhatsApp ──────────────────────────────────────────────────
+  static Future<bool> launchWhatsApp(String phoneNumber, String message) async {
+    String formattedPhone = phoneNumber.replaceAll(RegExp(r'[^0-9]'), '');
+    if (formattedPhone.startsWith('0')) {
+      formattedPhone = '62${formattedPhone.substring(1)}';
+    } else if (formattedPhone.startsWith('8')) {
+      formattedPhone = '62$formattedPhone';
+    }
+
+    if (formattedPhone.isEmpty) return false;
+
+    final uri = Uri.parse('https://wa.me/$formattedPhone?text=${Uri.encodeComponent(message)}');
+    try {
+      return await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } catch (_) {
+      return false;
+    }
+  }
+
   // ── Format Rupiah ────────────────────────────────────────────────────
   static String formatRupiah(dynamic amount) {
     final n = (amount is String) ? double.tryParse(amount) ?? 0 : (amount ?? 0).toDouble();

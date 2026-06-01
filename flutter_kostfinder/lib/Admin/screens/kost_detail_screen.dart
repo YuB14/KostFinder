@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 import '../services/api_service.dart';
+import '../../utils/helpers.dart';
 import 'kost_screen.dart';
 
 class KostDetailScreen extends StatefulWidget {
@@ -225,7 +226,18 @@ class _KostDetailScreenState extends State<KostDetailScreen> {
                         ]),
                       ),
                       IconButton(
-                        onPressed: () {},
+                        onPressed: () async {
+                          final messenger = ScaffoldMessenger.of(context);
+                          final ok = await Helpers.launchWhatsApp(
+                            kost.ownerNumber,
+                            'Halo, saya tertarik dengan kost ${kost.name}. Apakah masih tersedia?',
+                          );
+                          if (!ok) {
+                            messenger.showSnackBar(
+                              const SnackBar(content: Text('Gagal membuka WhatsApp')),
+                            );
+                          }
+                        },
                         icon: const Icon(Icons.phone_rounded, color: AppColors.teal),
                         style: IconButton.styleFrom(backgroundColor: AppColors.tealBg),
                       ),
@@ -242,7 +254,18 @@ class _KostDetailScreenState extends State<KostDetailScreen> {
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(color: card, border: Border(top: BorderSide(color: border))),
         child: ElevatedButton(
-          onPressed: () {},
+          onPressed: () async {
+            final messenger = ScaffoldMessenger.of(context);
+            final ok = await Helpers.launchWhatsApp(
+              kost.ownerNumber,
+              'Halo, saya tertarik dengan kost ${kost.name}. Apakah masih tersedia?',
+            );
+            if (!ok) {
+              messenger.showSnackBar(
+                const SnackBar(content: Text('Gagal membuka WhatsApp')),
+              );
+            }
+          },
           style: ElevatedButton.styleFrom(
             backgroundColor: AppColors.teal,
             padding: const EdgeInsets.symmetric(vertical: 16),

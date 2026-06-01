@@ -123,8 +123,13 @@
 
                 {{-- Telepon --}}
                 <div style="margin-bottom:14px">
-                    <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">Telepon</div>
-                    <div id="kd-telepon" style="font-size:13px"></div>
+                    <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">Telepon / WhatsApp</div>
+                    <div style="display:flex;align-items:center;gap:12px">
+                        <div id="kd-telepon" style="font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:var(--text)"></div>
+                        <a id="kd-whatsapp-btn" href="#" target="_blank" class="btn-sm" style="background:#25D366;color:white;text-decoration:none;display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:8px;font-size:12px;font-weight:700;border:none;box-shadow:0 2px 8px rgba(37,211,102,.3)">
+                            💬 Hubungi via WA
+                        </a>
+                    </div>
                 </div>
 
                 {{-- Ulasan --}}
@@ -135,9 +140,12 @@
                     </div>
                 </div>
             </div>
-            <div class="modal-footer">
+            <div class="modal-footer" style="display:flex;gap:8px;justify-content:flex-end;align-items:center">
                 <button class="btn-sm" onclick="closeModal('modal-kost-detail')">Tutup</button>
                 <button class="btn-sm primary" id="btn-fav-kost" onclick="tambahFavoritDariDetail()">❤️ Simpan Favorit</button>
+                <a id="kd-whatsapp-footer-btn" href="#" target="_blank" class="btn-sm" style="background:#25D366;color:white;text-decoration:none;display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:8px;font-weight:700;border:none;box-shadow:0 3px 10px rgba(37,211,102,.3)">
+                    💬 Hubungi Pemilik (WA)
+                </a>
             </div>
         </div>
     </div>
@@ -316,6 +324,32 @@
             statusEl.className   = 'pill ' + (STATUS_CLASS[d.status] || 'green');
 
             document.getElementById('kd-telepon').textContent = d.telepon || '-';
+
+            // WhatsApp Link Generator
+            const rawPhone = d.telepon || '';
+            const cleanPhone = rawPhone.replace(/[^0-9]/g, '');
+            let formattedPhone = cleanPhone;
+            if (formattedPhone.startsWith('0')) {
+                formattedPhone = '62' + formattedPhone.substring(1);
+            } else if (formattedPhone.startsWith('8')) {
+                formattedPhone = '62' + formattedPhone;
+            }
+
+            const waBtn = document.getElementById('kd-whatsapp-btn');
+            const waFooterBtn = document.getElementById('kd-whatsapp-footer-btn');
+
+            if (formattedPhone) {
+                const message = `Halo, saya tertarik dengan kost ${d.nama}. Apakah masih tersedia?`;
+                const url = `https://wa.me/${formattedPhone}?text=${encodeURIComponent(message)}`;
+                waBtn.href = url;
+                waBtn.style.display = 'inline-flex';
+                
+                waFooterBtn.href = url;
+                waFooterBtn.style.display = 'inline-flex';
+            } else {
+                waBtn.style.display = 'none';
+                waFooterBtn.style.display = 'none';
+            }
 
             const fasList = Array.isArray(d.fasList) ? d.fasList : [];
             document.getElementById('kd-fasilitas').innerHTML = fasList.length

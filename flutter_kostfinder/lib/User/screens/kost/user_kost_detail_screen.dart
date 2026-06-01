@@ -383,7 +383,20 @@ class _UserKostDetailScreenState extends State<UserKostDetailScreen> {
                               ]),
                         ),
                         IconButton(
-                          onPressed: () {},
+                          onPressed: () async {
+                            final messenger = ScaffoldMessenger.of(context);
+                            final phone = (k['nomor_telepon'] ?? '').toString();
+                            final name = (k['nama_kost'] ?? '').toString();
+                            final ok = await Helpers.launchWhatsApp(
+                              phone,
+                              'Halo, saya tertarik dengan kost $name. Apakah masih tersedia?',
+                            );
+                            if (!ok) {
+                              messenger.showSnackBar(
+                                const SnackBar(content: Text('Gagal membuka WhatsApp')),
+                              );
+                            }
+                          },
                           icon: const Icon(Icons.phone_rounded,
                               color: AppColors.teal),
                           style: IconButton.styleFrom(

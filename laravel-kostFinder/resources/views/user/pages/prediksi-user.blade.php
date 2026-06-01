@@ -170,10 +170,24 @@
                 </div>
             </div>
             <div id="pd-fasilitas" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px"></div>
+
+            {{-- Telepon --}}
+            <div style="margin-bottom:14px">
+                <div style="font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;margin-bottom:6px">Telepon / WhatsApp</div>
+                <div style="display:flex;align-items:center;gap:12px">
+                    <div id="pd-telepon" style="font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:var(--text)"></div>
+                    <a id="pd-whatsapp-btn" href="#" target="_blank" class="btn-sm" style="background:#25D366;color:white;text-decoration:none;display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:8px;font-size:12px;font-weight:700;border:none;box-shadow:0 2px 8px rgba(37,211,102,.3)">
+                        💬 Hubungi via WA
+                    </a>
+                </div>
+            </div>
         </div>
-        <div class="modal-footer">
+        <div class="modal-footer" style="display:flex;gap:8px;justify-content:flex-end;align-items:center">
             <button class="btn-sm" onclick="closeModal('modal-pred-detail')">Tutup</button>
             <button class="btn-sm primary" id="btn-fav-pred" onclick="tambahFavDariPred()">❤️ Simpan Favorit</button>
+            <a id="pd-whatsapp-footer-btn" href="#" target="_blank" class="btn-sm" style="background:#25D366;color:white;text-decoration:none;display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:8px;font-weight:700;border:none;box-shadow:0 3px 10px rgba(37,211,102,.3)">
+                💬 Hubungi Pemilik (WA)
+            </a>
         </div>
     </div>
 </div>
@@ -352,6 +366,7 @@ function tampilkanHasil(prediksi, kosts, meta, sumber) {
             status_label:k.status_label,luas_kamar:k.luas_kamar,
             listrik:k.listrik,ac:k.ac,kamar_mandi_dalam:k.kamar_mandi_dalam,
             parkir_motor:k.parkir_motor,laundry:k.laundry,wifi:k.wifi,
+            telepon:k.nomor_telepon||'',
         }).replace(/'/g,"&#39;");
         const persen = Math.min(100, Math.round((k.skor_cocok / (meta.max_skor || 1)) * 100));
         const kelasColor = k.kelas===3?'var(--yellow)':k.kelas===2?'var(--teal)':'var(--muted)';
@@ -398,6 +413,35 @@ function bukaDetail(d) {
     document.getElementById('pd-rating').innerHTML  = `<span style="color:var(--yellow)">${renderStars(d.rating)}</span> ${parseFloat(d.rating||0).toFixed(1)}`;
     const fasAktif=Object.entries(FAS_MAP).filter(([k])=>d[k]==1).map(([,v])=>v);
     document.getElementById('pd-fasilitas').innerHTML = fasAktif.map(f=>`<span style="background:var(--bg);border:1px solid var(--border);border-radius:100px;padding:4px 10px;font-size:12px">${f}</span>`).join('') || '<span style="color:var(--muted);font-size:12px">—</span>';
+    
+    document.getElementById('pd-telepon').textContent = d.telepon || '-';
+
+    // WhatsApp Link Generator
+    const rawPhone = d.telepon || '';
+    const cleanPhone = rawPhone.replace(/[^0-9]/g, '');
+    let formattedPhone = cleanPhone;
+    if (formattedPhone.startsWith('0')) {
+        formattedPhone = '62' + formattedPhone.substring(1);
+    } else if (formattedPhone.startsWith('8')) {
+        formattedPhone = '62' + formattedPhone;
+    }
+
+    const waBtn = document.getElementById('pd-whatsapp-btn');
+    const waFooterBtn = document.getElementById('pd-whatsapp-footer-btn');
+
+    if (formattedPhone) {
+        const message = `Halo, saya tertarik dengan kost ${d.nama}. Apakah masih tersedia?`;
+        const url = `https://wa.me/${formattedPhone}?text=${encodeURIComponent(message)}`;
+        waBtn.href = url;
+        waBtn.style.display = 'inline-flex';
+        
+        waFooterBtn.href = url;
+        waFooterBtn.style.display = 'inline-flex';
+    } else {
+        waBtn.style.display = 'none';
+        waFooterBtn.style.display = 'none';
+    }
+
     openModal('modal-pred-detail');
 }
 
