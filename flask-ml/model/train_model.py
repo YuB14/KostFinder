@@ -17,31 +17,31 @@ MODEL_DIR   = os.path.join(os.path.dirname(__file__), '..', 'saved_model')
 
 
 def train():
-    debugPrint(f"[Training] Mengambil data dari {LARAVEL_URL}/api/kost ...")
+    print(f"[Training] Mengambil data dari {LARAVEL_URL}/api/kost ...")
 
     try:
         response = requests.get(f'{LARAVEL_URL}/api/kost', timeout=15)
         response.raise_for_status()
         api_data = response.json()
     except Exception as e:
-        debugPrint(f"[Training] GAGAL mengambil data: {e}")
+        print(f"[Training] GAGAL mengambil data: {e}")
         return
 
     kost_data = api_data if isinstance(api_data, list) else api_data.get('data', [])
 
     if not kost_data:
-        debugPrint("[Training] Tidak ada data kost. Pastikan Laravel sudah berjalan dan ada data.")
+        print("[Training] Tidak ada data kost. Pastikan Laravel sudah berjalan dan ada data.")
         return
 
-    debugPrint(f"[Training] Data diterima: {len(kost_data)} kost.")
+    print(f"[Training] Data diterima: {len(kost_data)} kost.")
 
     predictor = KostPredictor(model_dir=MODEL_DIR)
     success, message = predictor.train(kost_data)
 
     if success:
-        debugPrint(f"[Training] OK: {message}")
+        print(f"[Training] OK: {message}")
     else:
-        debugPrint(f"[Training] GAGAL: {message}")
+        print(f"[Training] GAGAL: {message}")
 
 
 if __name__ == '__main__':

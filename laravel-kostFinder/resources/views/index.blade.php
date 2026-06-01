@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>KostFinder — Temukan Kost Impianmu</title>
+  <meta name="description" content="Platform pencarian kost terbaik di Indonesia. Bandingkan harga, cek fasilitas, dan temukan kost impianmu dengan mudah." />
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet"/>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -147,8 +148,8 @@
       border: 1px solid rgba(0,0,0,.12);
       border-radius: 100px;
       padding: 8px 8px 8px 24px;
-      width: 100%; max-width: 620px;
-      gap: 12px;
+      width: 100%; max-width: 720px;
+      gap: 10px;
       box-shadow: 0 8px 32px rgba(0,0,0,.1);
       animation: fadeUp .7s .35s ease both;
       transition: border-color .2s;
@@ -158,9 +159,28 @@
     .search-box input {
       flex: 1; background: transparent; border: none; outline: none;
       color: var(--white); font-family: 'DM Sans', sans-serif;
-      font-size: 15px;
+      font-size: 15px; min-width: 120px;
     }
     .search-box input::placeholder { color: var(--muted); }
+
+    .search-box select {
+      background: var(--navy);
+      border: 1px solid rgba(0,0,0,.1);
+      border-radius: 100px;
+      padding: 10px 16px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      color: var(--white);
+      cursor: pointer;
+      outline: none;
+      max-width: 180px;
+      appearance: none;
+      -webkit-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236B7E94' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      padding-right: 30px;
+    }
 
     .search-btn {
       background: var(--coral);
@@ -208,6 +228,51 @@
     .fc-3 { bottom: 22%; left: 8%; animation: float 7s ease-in-out infinite 1s; }
 
     @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-12px)} }
+
+    /* ─── SEARCH RESULTS SECTION ─── */
+    .search-results-section {
+      display: none;
+      padding: 64px 24px 48px;
+      background: linear-gradient(180deg, var(--navy2), var(--navy));
+    }
+    .search-results-section.active { display: block; }
+
+    .search-results-header {
+      display: flex; align-items: flex-end; justify-content: space-between;
+      flex-wrap: wrap; gap: 16px;
+      margin-bottom: 32px;
+    }
+
+    .login-gate-banner {
+      margin-top: 32px;
+      background: linear-gradient(135deg, rgba(232,67,13,.08), rgba(0,143,120,.08));
+      border: 1px solid rgba(232,67,13,.2);
+      border-radius: var(--r);
+      padding: 24px 32px;
+      display: flex; align-items: center; gap: 20px;
+      flex-wrap: wrap;
+    }
+    .login-gate-banner .gate-icon { font-size: 36px; }
+    .login-gate-banner .gate-text { flex: 1; min-width: 200px; }
+    .login-gate-banner .gate-text h4 {
+      font-family: 'Syne', sans-serif;
+      font-size: 16px; font-weight: 700;
+      margin-bottom: 4px;
+    }
+    .login-gate-banner .gate-text p { font-size: 13px; color: var(--muted); line-height: 1.5; }
+    .login-gate-banner .gate-btns { display: flex; gap: 10px; }
+    .login-gate-banner .gate-btns a {
+      padding: 10px 22px;
+      border-radius: 100px;
+      font-size: 13px; font-weight: 600;
+      text-decoration: none;
+      transition: transform .15s, background .2s;
+    }
+    .login-gate-banner .gate-btns a:hover { transform: translateY(-1px); }
+    .gate-btn-primary { background: var(--coral); color: white; }
+    .gate-btn-primary:hover { background: var(--coral2); }
+    .gate-btn-outline { background: transparent; color: var(--white); border: 2px solid rgba(0,0,0,.15); }
+    .gate-btn-outline:hover { border-color: rgba(0,0,0,.4); }
 
     /* ─── SECTION COMMON ─── */
     section { padding: 96px 24px; }
@@ -310,6 +375,12 @@
       background: linear-gradient(135deg, #dce8f5, #c5d8ee);
       display: flex; align-items: center; justify-content: center;
       font-size: 60px; position: relative;
+      overflow: hidden;
+    }
+    .kost-img img {
+      width: 100%; height: 100%;
+      object-fit: cover;
+      position: absolute; inset: 0;
     }
 
     .kost-badge {
@@ -318,21 +389,21 @@
       color: white; font-size: 11px; font-weight: 700;
       padding: 4px 10px; border-radius: 100px;
       letter-spacing: .04em;
+      z-index: 2;
     }
     .kost-badge.teal { background: var(--teal); color: var(--navy); }
 
-    .fav-btn {
+    .fav-count-badge {
       position: absolute; top: 12px; right: 12px;
-      width: 34px; height: 34px; border-radius: 50%;
-      background: rgba(255,255,255,.85);
-      border: 1px solid rgba(0,0,0,.12);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 16px; cursor: pointer;
-      transition: background .2s, transform .15s;
+      background: rgba(255,255,255,.9);
+      border: 1px solid rgba(0,0,0,.1);
+      border-radius: 100px;
+      padding: 4px 10px;
+      font-size: 12px; font-weight: 600;
+      display: flex; align-items: center; gap: 4px;
+      z-index: 2;
       backdrop-filter: blur(8px);
     }
-    .fav-btn:hover { background: rgba(232,67,13,.15); transform: scale(1.15); }
-    .fav-btn.active { background: rgba(232,67,13,.2); }
 
     .kost-body { padding: 20px 20px 16px; }
     .kost-name {
@@ -368,6 +439,7 @@
       font-size: 13px; font-weight: 600;
       cursor: pointer;
       transition: background .2s, transform .15s;
+      text-decoration: none;
     }
     .detail-btn:hover { background: var(--coral); color: white; transform: scale(1.03); }
 
@@ -448,6 +520,7 @@
       font-size: 16px; font-weight: 700;
       padding: 16px 36px; border-radius: 100px;
       transition: background .2s, transform .15s;
+      text-decoration: none;
     }
     .btn-primary:hover { background: var(--coral2); transform: scale(1.04); }
     .btn-outline {
@@ -457,6 +530,7 @@
       font-size: 16px; font-weight: 700;
       padding: 16px 36px; border-radius: 100px;
       transition: border-color .2s, transform .15s;
+      text-decoration: none;
     }
     .btn-outline:hover { border-color: rgba(0,0,0,.5); transform: scale(1.04); }
 
@@ -479,6 +553,28 @@
       transition: background .2s, color .2s;
     }
     footer .socials a:hover { background: var(--coral); color: white; }
+
+    /* ─── LOADING SPINNER ─── */
+    .spinner {
+      display: inline-block;
+      width: 20px; height: 20px;
+      border: 3px solid rgba(255,255,255,.3);
+      border-radius: 50%;
+      border-top-color: #fff;
+      animation: spin .6s ease-in-out infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .search-loading {
+      text-align: center; padding: 40px;
+      color: var(--muted); font-size: 15px;
+    }
+    .search-loading .spinner {
+      border-color: rgba(0,0,0,.1);
+      border-top-color: var(--coral);
+      width: 32px; height: 32px;
+      margin-bottom: 12px;
+    }
 
     /* ─── ANIMATIONS ─── */
     @keyframes fadeDown {
@@ -504,10 +600,14 @@
       .features-grid { grid-template-columns: 1fr 1fr; }
       .fc-1, .fc-2, .fc-3 { display: none; }
       .hero-stats { gap: 28px; }
+      .search-box { flex-wrap: wrap; border-radius: 20px; padding: 12px; }
+      .search-box select { max-width: 100%; }
+      .login-gate-banner { flex-direction: column; text-align: center; }
     }
     @media (max-width: 600px) {
       .filter-grid { grid-template-columns: 1fr; }
       .features-grid { grid-template-columns: 1fr; }
+      .kost-grid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -549,7 +649,7 @@
   <div class="float-card fc-3">
     <span class="icon">📍</span>
     <div>
-      <strong>2.400+ Kost</strong>
+      <strong>{{ number_format($totalKost) }}+ Kost</strong>
       <span>Di seluruh Indonesia</span>
     </div>
   </div>
@@ -567,24 +667,54 @@
 
   <p>Bandingkan harga, cek fasilitas, dan booking kost favoritmu — semua dalam satu platform yang cepat dan mudah.</p>
 
-  <div class="search-box">
+  <form class="search-box" id="search-form" onsubmit="searchKost(event)">
     <span>📍</span>
-    <input type="text" placeholder="Cari kost di Jember, Surabaya, Malang..."/>
-    <button class="search-btn" onclick="scrollToKost()">Cari Kost →</button>
-  </div>
+    <input type="text" id="search-keyword" name="keyword" placeholder="Cari nama kost, wilayah, atau harga..." autocomplete="off" style="width: 100%;"/>
+    <button type="submit" class="search-btn" id="search-submit-btn">Cari Kost →</button>
+  </form>
 
   <div class="hero-stats">
     <div class="stat">
-      <div class="num">2.4<span>K+</span></div>
+      <div class="num">{{ number_format($totalKost) }}<span>+</span></div>
       <div class="label">Kost Tersedia</div>
     </div>
     <div class="stat">
-      <div class="num">18<span>K+</span></div>
+      <div class="num">{{ number_format($totalUsers) }}<span>+</span></div>
       <div class="label">Pengguna Aktif</div>
     </div>
     <div class="stat">
       <div class="num">98<span>%</span></div>
       <div class="label">Kepuasan User</div>
+    </div>
+  </div>
+</section>
+
+<!-- SEARCH RESULTS (hidden by default, shown after search) -->
+<section class="search-results-section" id="search-results-section">
+  <div class="section-inner">
+    <div class="search-results-header">
+      <div>
+        <div class="section-label">Hasil Pencarian</div>
+        <h2 class="section-title">Top <span style="color:var(--coral)">3</span> Kost Terfavorit</h2>
+        <p class="section-sub" id="search-info">Menampilkan 3 kost terbaik berdasarkan jumlah favorit dan rating.</p>
+      </div>
+    </div>
+
+    <div class="kost-grid" id="search-results-grid">
+      <!-- Filled by JS -->
+    </div>
+
+    <!-- Login gate banner -->
+    <div class="login-gate-banner" id="login-gate-banner" style="display:none;">
+      <div class="gate-icon">🔒</div>
+      <div class="gate-text">
+        <h4>Ingin mencari lebih banyak kost?</h4>
+        <p>Gunakan fitur <strong>prediksi harga AI</strong> dan filter lengkap untuk menemukan kost yang sesuai budget kamu. Login atau daftar sekarang — gratis!</p>
+      </div>
+      <div class="gate-btns">
+        <a href="/login" class="gate-btn-primary">Login</a>
+        <a href="/register" class="gate-btn-outline">Daftar</a>
+      </div>
     </div>
   </div>
 </section>
@@ -602,7 +732,7 @@
       <div class="filter-card" onclick="filterKost('ekonomis')">
         <div class="filter-icon fc-coral">💼</div>
         <h3>Ekonomis</h3>
-        <div class="price">Rp 300K – 600K/bln</div>
+        <div class="price">≤ Rp 1 Juta/bln</div>
         <div class="desc">Cocok untuk mahasiswa dan pekerja dengan budget terbatas.</div>
         <div class="facilities">
           <span class="tag">WiFi</span>
@@ -613,7 +743,7 @@
       <div class="filter-card" onclick="filterKost('standar')">
         <div class="filter-icon fc-teal">🏡</div>
         <h3>Standar</h3>
-        <div class="price">Rp 600K – 1.2Jt/bln</div>
+        <div class="price">≤ Rp 1.5 Juta/bln</div>
         <div class="desc">Fasilitas lebih lengkap, kenyamanan lebih terjamin.</div>
         <div class="facilities">
           <span class="tag teal">WiFi</span>
@@ -625,7 +755,7 @@
       <div class="filter-card" onclick="filterKost('premium')">
         <div class="filter-icon fc-yellow">⭐</div>
         <h3>Premium</h3>
-        <div class="price">Rp 1.2Jt – 2.5Jt/bln</div>
+        <div class="price">> Rp 1.5 Juta/bln</div>
         <div class="desc">Fasilitas hotel dengan harga kost. Nyaman & eksklusif.</div>
         <div class="facilities">
           <span class="tag">AC</span>
@@ -648,7 +778,7 @@
   </div>
 </section>
 
-<!-- KOST LISTING -->
+<!-- KOST LISTING (6 Terbaru) -->
 <section id="kost">
   <div class="section-inner">
     <div class="reveal fav-header">
@@ -656,31 +786,105 @@
         <div class="section-label">Listing Terbaru</div>
         <h2 class="section-title">Kost <span style="color:var(--coral)">Pilihan</span></h2>
       </div>
-      <p id="filter-label" style="color:var(--muted);font-size:14px;align-self:flex-end;">Menampilkan semua kost</p>
+      <p id="filter-label" style="color:var(--muted);font-size:14px;align-self:flex-end;">Menampilkan 6 kost terbaru</p>
     </div>
 
     <div class="kost-grid reveal" id="kost-grid">
-      <!-- generated by JS -->
+      @forelse($latestKosts as $k)
+      <div class="kost-card reveal" data-harga="{{ $k['harga_kost'] }}" data-kelas="{{ $k['kelas'] }}">
+        <div class="kost-img">
+          {{ $k['emoji'] }}
+          @if($k['foto_kost'])
+            <img src="{{ $k['foto_kost'] }}" alt="{{ $k['nama_kost'] }}" loading="lazy" onerror="this.style.display='none'"/>
+          @endif
+          <span class="kost-badge {{ $k['kelas'] == 3 ? '' : 'teal' }}">{{ $k['badge'] }}</span>
+          <span class="fav-count-badge">❤️ {{ $k['fav_count'] }}</span>
+        </div>
+        <div class="kost-body">
+          <div class="kost-name">{{ $k['nama_kost'] }}</div>
+          <div class="kost-loc">📍 {{ $k['alamat_kost'] }} · {{ $k['wilayah_nama'] }}</div>
+          <div class="kost-price">Rp {{ number_format($k['harga_kost'], 0, ',', '.') }}<span>/bulan</span></div>
+          <div class="kost-facs">
+            @foreach($k['fasilitas'] as $fac)
+              <span class="tag">{{ $fac }}</span>
+            @endforeach
+          </div>
+        </div>
+        <div class="kost-footer">
+          <div class="rating">
+            <span class="stars">
+              @for($i = 1; $i <= 5; $i++)
+                {{ $i <= floor($k['avg_rating']) ? '★' : '☆' }}
+              @endfor
+            </span>
+            <strong>{{ $k['avg_rating'] }}</strong>
+            <span class="count">({{ $k['review_count'] }})</span>
+          </div>
+          <a href="/login" class="detail-btn">Lihat Detail</a>
+        </div>
+      </div>
+      @empty
+      <p style="color:var(--muted);grid-column:1/-1;text-align:center;padding:40px">Belum ada kost tersedia saat ini.</p>
+      @endforelse
     </div>
   </div>
 </section>
 
-<!-- FAVORIT -->
+<!-- FAVORIT (6 Kost Paling Banyak Difavoritkan) -->
 <section class="fav-section" id="favorit">
   <div class="section-inner">
     <div class="reveal fav-header">
       <div>
-        <div class="section-label">Koleksi Kamu</div>
+        <div class="section-label">Paling Disukai</div>
         <h2 class="section-title">Kost <span style="color:var(--yellow)">Favorit</span> ❤️</h2>
+        <p class="section-sub">6 kost paling banyak difavoritkan oleh pengguna KostFinder.</p>
       </div>
-      <button class="btn-outline" id="clear-fav" onclick="clearFav()" style="padding:10px 20px;font-size:13px;display:none;">Hapus Semua</button>
     </div>
 
     <div id="fav-content">
+      @if(count($favoritKosts) > 0)
+      <div class="kost-grid" id="fav-grid">
+        @foreach($favoritKosts as $k)
+        <div class="kost-card reveal">
+          <div class="kost-img">
+            {{ $k['emoji'] }}
+            @if($k['foto_kost'])
+              <img src="{{ $k['foto_kost'] }}" alt="{{ $k['nama_kost'] }}" loading="lazy" onerror="this.style.display='none'"/>
+            @endif
+            <span class="kost-badge {{ $k['kelas'] == 3 ? '' : 'teal' }}">{{ $k['badge'] }}</span>
+            <span class="fav-count-badge">❤️ {{ $k['fav_count'] }}</span>
+          </div>
+          <div class="kost-body">
+            <div class="kost-name">{{ $k['nama_kost'] }}</div>
+            <div class="kost-loc">📍 {{ $k['alamat_kost'] }} · {{ $k['wilayah_nama'] }}</div>
+            <div class="kost-price">Rp {{ number_format($k['harga_kost'], 0, ',', '.') }}<span>/bulan</span></div>
+            <div class="kost-facs">
+              @foreach($k['fasilitas'] as $fac)
+                <span class="tag">{{ $fac }}</span>
+              @endforeach
+            </div>
+          </div>
+          <div class="kost-footer">
+            <div class="rating">
+              <span class="stars">
+                @for($i = 1; $i <= 5; $i++)
+                  {{ $i <= floor($k['avg_rating']) ? '★' : '☆' }}
+                @endfor
+              </span>
+              <strong>{{ $k['avg_rating'] }}</strong>
+              <span class="count">({{ $k['review_count'] }})</span>
+            </div>
+            <a href="/login" class="detail-btn">Lihat Detail</a>
+          </div>
+        </div>
+        @endforeach
+      </div>
+      @else
       <div class="fav-empty reveal">
         <div class="icon">💔</div>
-        <p>Belum ada kost favorit.<br>Klik ikon ❤️ pada kost untuk menyimpannya di sini!</p>
+        <p>Belum ada kost favorit.<br>Kost dengan favorit terbanyak akan muncul di sini!</p>
       </div>
+      @endif
     </div>
   </div>
 </section>
@@ -714,9 +918,9 @@
       </div>
       <div class="feat-card">
         <div class="feat-num">04</div>
-        <div class="feat-icon">💬</div>
-        <h3>Chat Langsung</h3>
-        <p>Hubungi pemilik kost langsung dari platform. No ribet, no muter-muter.</p>
+        <div class="feat-icon">🤖</div>
+        <h3>Prediksi Harga AI</h3>
+        <p>Gunakan machine learning untuk prediksi harga kost sesuai fasilitas dan lokasi yang kamu inginkan.</p>
       </div>
       <div class="feat-card">
         <div class="feat-num">05</div>
@@ -741,8 +945,8 @@
       <h2>Siap Temukan Kost <span style="color:var(--coral)">Impianmu?</span></h2>
       <p>Ribuan kost tersedia, menunggu kamu temukan. Gratis, mudah, dan terpercaya.</p>
       <div class="cta-btns">
-        <button class="btn-primary" onclick="scrollToKost()">🔍 Cari Kost Sekarang</button>
-        <button class="btn-outline">📋 Daftarkan Kost Kamu</button>
+        <a href="/register" class="btn-primary">🚀 Daftar Gratis Sekarang</a>
+        <a href="#kost" class="btn-outline">🔍 Cari Kost Sekarang</a>
       </div>
     </div>
   </div>
@@ -760,127 +964,122 @@
 </footer>
 
 <script>
-  // ─── DATA ───
-  const kostData = [
-    { id: 1, name: 'Kost Melati Putih', loc: 'Jember Kota, Jember', price: 450000, tier: 'ekonomis', emoji: '🌸', rating: 4.2, reviews: 24, facs: ['WiFi', 'Air Panas', 'Parkir'], badge: 'Tersedia' },
-    { id: 2, name: 'Kost Griya Asri', loc: 'Sumbersari, Jember', price: 750000, tier: 'standar', emoji: '🏡', rating: 4.6, reviews: 38, facs: ['WiFi', 'AC', 'KM Dalam', 'Laundry'], badge: 'Populer', badgeTeal: true },
-    { id: 3, name: 'Kost Residence 88', loc: 'Patrang, Jember', price: 1500000, tier: 'premium', emoji: '🏢', rating: 4.9, reviews: 61, facs: ['WiFi', 'AC', 'TV', 'Gym', 'Kulkas'], badge: 'Premium' },
-    { id: 4, name: 'Kost Barokah', loc: 'Kaliwates, Jember', price: 380000, tier: 'ekonomis', emoji: '🌿', rating: 4.0, reviews: 15, facs: ['WiFi', 'Parkir', 'Keamanan'], badge: 'Tersedia' },
-    { id: 5, name: 'Kost Bintang Mas', loc: 'Tegalboto, Jember', price: 950000, tier: 'standar', emoji: '⭐', rating: 4.5, reviews: 47, facs: ['WiFi', 'AC', 'Dapur', 'KM Dalam'], badge: 'Baru', badgeTeal: true },
-    { id: 6, name: 'Kost Villa Elok', loc: 'Mangli, Jember', price: 2200000, tier: 'premium', emoji: '🏰', rating: 5.0, reviews: 29, facs: ['WiFi', 'AC', 'Kolam Renang', 'Parkir Mobil', 'Cleaning'], badge: 'Eksklusif' },
-  ];
+  // ─── SEARCH ───
+  async function searchKost(e) {
+    e.preventDefault();
 
-  let favorites = JSON.parse(localStorage.getItem('kf-favs') || '[]');
-  let currentFilter = 'all';
+    const keyword = document.getElementById('search-keyword').value.trim();
 
-  // ─── RENDER KOST ───
-  function renderKost(data) {
-    const grid = document.getElementById('kost-grid');
-    if (!data.length) {
-      grid.innerHTML = '<p style="color:var(--muted);grid-column:1/-1;text-align:center;padding:40px">Tidak ada kost ditemukan untuk filter ini.</p>';
+    if (!keyword) {
+      alert('Masukkan kata kunci pencarian (nama, wilayah, atau harga).');
       return;
     }
-    grid.innerHTML = data.map(k => `
-      <div class="kost-card reveal" id="kost-${k.id}">
+
+    const section = document.getElementById('search-results-section');
+    const grid    = document.getElementById('search-results-grid');
+    const info    = document.getElementById('search-info');
+    const gate    = document.getElementById('login-gate-banner');
+    const btn     = document.getElementById('search-submit-btn');
+
+    // Show section & loading
+    section.classList.add('active');
+    section.scrollIntoView({ behavior: 'smooth' });
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>';
+    grid.innerHTML = '<div class="search-loading"><div class="spinner"></div><p>Mencari kost terbaik...</p></div>';
+    gate.style.display = 'none';
+
+    try {
+      const params = new URLSearchParams();
+      if (keyword) params.append('keyword', keyword);
+
+      const res = await fetch('/search?' + params.toString());
+      const json = await res.json();
+
+      if (json.success && json.data.length > 0) {
+        info.textContent = `Ditemukan ${json.total_found} kost — menampilkan 3 terfavorit.`;
+        grid.innerHTML = json.data.map(k => renderKostCard(k)).join('');
+        observeReveal();
+      } else {
+        grid.innerHTML = '<p style="color:var(--muted);grid-column:1/-1;text-align:center;padding:40px">Tidak ada kost ditemukan untuk pencarian ini.</p>';
+        info.textContent = 'Tidak ada hasil ditemukan.';
+      }
+
+      // Show login gate
+      if (json.loginRequired) {
+        gate.style.display = 'flex';
+      }
+
+    } catch (err) {
+      grid.innerHTML = '<p style="color:var(--coral);grid-column:1/-1;text-align:center;padding:40px">Terjadi kesalahan saat mencari. Silakan coba lagi.</p>';
+    }
+
+    btn.disabled = false;
+    btn.textContent = 'Cari Kost →';
+  }
+
+  // ─── RENDER KOST CARD (for search results) ───
+  function renderKostCard(k) {
+    const stars = '★'.repeat(Math.floor(k.avg_rating)) + '☆'.repeat(5 - Math.floor(k.avg_rating));
+    const facs = k.fasilitas.map(f => `<span class="tag">${f}</span>`).join('');
+    const badgeClass = k.kelas === 3 ? '' : 'teal';
+    const fotoHtml = k.foto_kost
+      ? `<img src="${k.foto_kost}" alt="${k.nama_kost}" loading="lazy" onerror="this.style.display='none'" />`
+      : '';
+
+    return `
+      <div class="kost-card reveal visible">
         <div class="kost-img">
           ${k.emoji}
-          <span class="kost-badge ${k.badgeTeal ? 'teal' : ''}">${k.badge}</span>
-          <button class="fav-btn ${favorites.includes(k.id) ? 'active' : ''}" onclick="toggleFav(${k.id})" title="Tambah Favorit">
-            ${favorites.includes(k.id) ? '❤️' : '🤍'}
-          </button>
+          ${fotoHtml}
+          <span class="kost-badge ${badgeClass}">${k.badge}</span>
+          <span class="fav-count-badge">❤️ ${k.fav_count}</span>
         </div>
         <div class="kost-body">
-          <div class="kost-name">${k.name}</div>
-          <div class="kost-loc">📍 ${k.loc}</div>
-          <div class="kost-price">Rp ${k.price.toLocaleString('id-ID')}<span>/bulan</span></div>
-          <div class="kost-facs">${k.facs.map(f => `<span class="tag">${f}</span>`).join('')}</div>
+          <div class="kost-name">${k.nama_kost}</div>
+          <div class="kost-loc">📍 ${k.alamat_kost} · ${k.wilayah_nama}</div>
+          <div class="kost-price">Rp ${Number(k.harga_kost).toLocaleString('id-ID')}<span>/bulan</span></div>
+          <div class="kost-facs">${facs}</div>
         </div>
         <div class="kost-footer">
           <div class="rating">
-            <span class="stars">${'★'.repeat(Math.floor(k.rating))}${'☆'.repeat(5 - Math.floor(k.rating))}</span>
-            <strong>${k.rating}</strong>
-            <span class="count">(${k.reviews})</span>
+            <span class="stars">${stars}</span>
+            <strong>${k.avg_rating}</strong>
+            <span class="count">(${k.review_count})</span>
           </div>
-          <button class="detail-btn">Lihat Detail</button>
+          <a href="/login" class="detail-btn">Lihat Detail</a>
         </div>
       </div>
-    `).join('');
-    observeReveal();
+    `;
   }
 
-  // ─── FILTER ───
+  // ─── FILTER (client-side from Listing Terbaru) ───
   function filterKost(tier) {
-    currentFilter = tier;
-    const data = tier === 'all' ? kostData : kostData.filter(k => k.tier === tier);
-    const labels = { all: 'Menampilkan semua kost', ekonomis: 'Budget Ekonomis (Rp 300K–600K)', standar: 'Budget Standar (Rp 600K–1.2Jt)', premium: 'Budget Premium (Rp 1.2Jt–2.5Jt)' };
-    document.getElementById('filter-label').textContent = labels[tier];
-    renderKost(data);
-    document.getElementById('kost').scrollIntoView({ behavior: 'smooth' });
-  }
+    const cards = document.querySelectorAll('#kost-grid .kost-card');
+    const labels = {
+      all:       'Menampilkan semua kost',
+      ekonomis:  'Budget Ekonomis (≤ Rp 1 Juta)',
+      standar:   'Budget Standar (≤ Rp 1.5 Juta)',
+      premium:   'Budget Premium (> Rp 1.5 Juta)'
+    };
+    document.getElementById('filter-label').textContent = labels[tier] || labels.all;
 
-  // ─── FAV ───
-  function toggleFav(id) {
-    if (favorites.includes(id)) {
-      favorites = favorites.filter(f => f !== id);
-    } else {
-      favorites.push(id);
-    }
-    localStorage.setItem('kf-favs', JSON.stringify(favorites));
-    // update buttons
-    document.querySelectorAll('.fav-btn').forEach(btn => {
-      const bid = parseInt(btn.getAttribute('onclick').replace('toggleFav(', '').replace(')', ''));
-      btn.classList.toggle('active', favorites.includes(bid));
-      btn.textContent = favorites.includes(bid) ? '❤️' : '🤍';
+    // Remove active from all filter cards
+    document.querySelectorAll('.filter-card').forEach(c => c.classList.remove('active'));
+    event.currentTarget.classList.add('active');
+
+    cards.forEach(card => {
+      const harga = parseFloat(card.dataset.harga) || 0;
+      let show = false;
+      if (tier === 'all') show = true;
+      else if (tier === 'ekonomis') show = harga <= 1000000;
+      else if (tier === 'standar') show = harga <= 1500000;
+      else if (tier === 'premium') show = harga > 1500000;
+
+      card.style.display = show ? '' : 'none';
     });
-    renderFav();
-  }
 
-  function renderFav() {
-    const container = document.getElementById('fav-content');
-    const clearBtn = document.getElementById('clear-fav');
-    if (!favorites.length) {
-      clearBtn.style.display = 'none';
-      container.innerHTML = `
-        <div class="fav-empty reveal">
-          <div class="icon">💔</div>
-          <p>Belum ada kost favorit.<br>Klik ikon ❤️ pada kost untuk menyimpannya di sini!</p>
-        </div>`;
-      observeReveal();
-      return;
-    }
-    clearBtn.style.display = '';
-    const data = kostData.filter(k => favorites.includes(k.id));
-    container.innerHTML = `<div class="kost-grid" id="fav-grid">${data.map(k => `
-      <div class="kost-card reveal">
-        <div class="kost-img">
-          ${k.emoji}
-          <span class="kost-badge ${k.badgeTeal ? 'teal' : ''}">${k.badge}</span>
-          <button class="fav-btn active" onclick="toggleFav(${k.id})">❤️</button>
-        </div>
-        <div class="kost-body">
-          <div class="kost-name">${k.name}</div>
-          <div class="kost-loc">📍 ${k.loc}</div>
-          <div class="kost-price">Rp ${k.price.toLocaleString('id-ID')}<span>/bulan</span></div>
-          <div class="kost-facs">${k.facs.map(f => `<span class="tag">${f}</span>`).join('')}</div>
-        </div>
-        <div class="kost-footer">
-          <div class="rating">
-            <span class="stars">${'★'.repeat(Math.floor(k.rating))}${'☆'.repeat(5 - Math.floor(k.rating))}</span>
-            <strong>${k.rating}</strong>
-            <span class="count">(${k.reviews})</span>
-          </div>
-          <button class="detail-btn">Lihat Detail</button>
-        </div>
-      </div>
-    `).join('')}</div>`;
-    observeReveal();
-  }
-
-  function clearFav() {
-    favorites = [];
-    localStorage.setItem('kf-favs', JSON.stringify(favorites));
-    document.querySelectorAll('.fav-btn').forEach(btn => { btn.classList.remove('active'); btn.textContent = '🤍'; });
-    renderFav();
+    document.getElementById('kost').scrollIntoView({ behavior: 'smooth' });
   }
 
   // ─── SCROLL REVEAL ───
@@ -902,8 +1101,6 @@
   }
 
   // ─── INIT ───
-  renderKost(kostData);
-  renderFav();
   observeReveal();
 </script>
 </body>

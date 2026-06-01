@@ -9,7 +9,7 @@ class ApiConfig {
     if (kIsWeb) {
       return 'http://127.0.0.1:8000';
     } else {
-      return 'http://10.10.185.127:8000'; // IP komputer Anda untuk Device Fisik
+      return 'http://10.10.187.99:8000'; // IP komputer Anda untuk Device Fisik
     }
   }
 
