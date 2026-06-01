@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../theme/app_theme.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../services/api_service.dart';
 import '../../utils/helpers.dart';
 
@@ -37,6 +38,18 @@ class _UserKostDetailScreenState extends State<UserKostDetailScreen> {
           .toList();
     } catch (_) {}
     if (mounted) setState(() => _loadingReviews = false);
+  }
+
+  Future<void> _launchWhatsApp(String phone) async {
+    if (phone.isEmpty) return;
+    String cleanPhone = phone.replaceAll(RegExp(r'[^\d]'), '');
+    if (cleanPhone.startsWith('0')) cleanPhone = '62${cleanPhone.substring(1)}';
+    final url = Uri.parse('https://wa.me/$cleanPhone');
+    if (await canLaunchUrl(url)) {
+      await launchUrl(url, mode: LaunchMode.externalApplication);
+    } else {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Tidak dapat membuka WhatsApp')));
+    }
   }
 
   Future<void> _addFavorite() async {
@@ -383,7 +396,7 @@ class _UserKostDetailScreenState extends State<UserKostDetailScreen> {
                               ]),
                         ),
                         IconButton(
-                          onPressed: () {},
+                          onPressed: () => _launchWhatsApp((k['nomor_telepon'] ?? '').toString()),
                           icon: const Icon(Icons.phone_rounded,
                               color: AppColors.teal),
                           style: IconButton.styleFrom(
@@ -432,25 +445,34 @@ class _UserKostDetailScreenState extends State<UserKostDetailScreen> {
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
             color: card, border: Border(top: BorderSide(color: border))),
-        child: ElevatedButton(
-          onPressed: _addingFav ? null : _addFavorite,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.coral,
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          ),
-          child: _addingFav
-              ? const SizedBox(
-                  height: 18,
-                  width: 18,
-                  child: CircularProgressIndicator(
-                      color: Colors.white, strokeWidth: 2))
-              : const Text('❤️ Simpan ke Favorit',
-                  style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white)),
+        child: Row(
+          children: [
+            Expanded(
+              child: ElevatedButton(
+                onPressed: _addingFav ? null : _addFavorite,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.coral,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                child: _addingFav
+                    ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                    : const Text('❤️ Favorit', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.white)),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: ElevatedButton(
+                onPressed: () => _launchWhatsApp((k['nomor_telepon'] ?? '').toString()),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.teal,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                child: const Text('💬 Hubungi', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.white)),
+              ),
+            ),
+          ],
         ),
       ),
     );
