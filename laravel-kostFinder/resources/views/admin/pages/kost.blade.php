@@ -329,7 +329,10 @@
             <div class="detail-row"><span class="detail-label">No. Telepon</span><span class="detail-val" id="vk-telepon"></span></div>
             <div class="detail-row" style="flex-direction:column;gap:6px"><span class="detail-label">Deskripsi</span><span class="detail-val" id="vk-deskripsi" style="white-space:pre-wrap"></span></div>
         </div>
-        <div class="modal-footer"><button class="btn-sm primary" onclick="closeModal('modal-kost-view')">Tutup</button></div>
+        <div class="modal-footer">
+            <button class="btn-sm" onclick="closeModal('modal-kost-view')">Tutup</button>
+            <button class="btn-sm primary" id="vk-btn-wa" onclick="hubungiWhatsApp(this.dataset.phone)">💬 Hubungi Pemilik</button>
+        </div>
     </div>
 </div>
 
@@ -609,7 +612,22 @@ function openViewKost(d){
     document.getElementById('vk-ukuran').textContent=d.luas_kamar?d.luas_kamar+' m²':'-';
     document.getElementById('vk-telepon').textContent=d.nomor_telepon||'-';
     document.getElementById('vk-deskripsi').textContent=d.deskripsi||'-';
+    document.getElementById('vk-btn-wa').dataset.phone=d.nomor_telepon||'';
     openModal('modal-kost-view');
+}
+
+function hubungiWhatsApp(phone) {
+    if(!phone || phone === '-' || phone.trim() === '') {
+        alert('Nomor telepon pemilik tidak tersedia');
+        return;
+    }
+    let cp = phone.replace(/\D/g, '');
+    if(cp.startsWith('0')) {
+        cp = '62' + cp.substring(1);
+    } else if(!cp.startsWith('62')) {
+        cp = '62' + cp;
+    }
+    window.open('https://wa.me/' + cp, '_blank');
 }
 
 /* TAMBAH — id HTML: kadd-nama, kadd-lokasi, kadd-harga, kadd-telepon, kadd-fasilitas, kadd-deskripsi, kadd-ukuran */

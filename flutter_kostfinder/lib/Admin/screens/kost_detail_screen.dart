@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../services/api_service.dart';
 import 'kost_screen.dart';
 
@@ -25,6 +26,18 @@ class _KostDetailScreenState extends State<KostDetailScreen> {
   String _kodLokasiLabel(int kode, String apiLabel) {
     if (apiLabel.isNotEmpty) return apiLabel;
     return _kodLokasiMap[kode] ?? 'Kode $kode';
+  }
+
+  Future<void> _launchWhatsApp(String phone) async {
+    if (phone.isEmpty) return;
+    String cleanPhone = phone.replaceAll(RegExp(r'[^\d]'), '');
+    if (cleanPhone.startsWith('0')) cleanPhone = '62${cleanPhone.substring(1)}';
+    final url = Uri.parse('https://wa.me/$cleanPhone');
+    if (await canLaunchUrl(url)) {
+      await launchUrl(url, mode: LaunchMode.externalApplication);
+    } else {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Tidak dapat membuka WhatsApp')));
+    }
   }
 
   Future<void> _toggleFavorite() async {
@@ -225,7 +238,7 @@ class _KostDetailScreenState extends State<KostDetailScreen> {
                         ]),
                       ),
                       IconButton(
-                        onPressed: () {},
+                        onPressed: () => _launchWhatsApp(kost.ownerNumber),
                         icon: const Icon(Icons.phone_rounded, color: AppColors.teal),
                         style: IconButton.styleFrom(backgroundColor: AppColors.tealBg),
                       ),
@@ -242,7 +255,7 @@ class _KostDetailScreenState extends State<KostDetailScreen> {
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(color: card, border: Border(top: BorderSide(color: border))),
         child: ElevatedButton(
-          onPressed: () {},
+          onPressed: () => _launchWhatsApp(kost.ownerNumber),
           style: ElevatedButton.styleFrom(
             backgroundColor: AppColors.teal,
             padding: const EdgeInsets.symmetric(vertical: 16),

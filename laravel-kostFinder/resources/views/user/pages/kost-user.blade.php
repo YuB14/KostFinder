@@ -135,9 +135,12 @@
                     </div>
                 </div>
             </div>
-            <div class="modal-footer">
+            <div class="modal-footer" style="display:flex;gap:10px">
                 <button class="btn-sm" onclick="closeModal('modal-kost-detail')">Tutup</button>
-                <button class="btn-sm primary" id="btn-fav-kost" onclick="tambahFavoritDariDetail()">❤️ Simpan Favorit</button>
+                <div style="flex:1;display:flex;justify-content:flex-end;gap:10px">
+                    <button class="btn-sm" style="border-color:var(--teal);color:var(--teal)" id="kd-btn-wa" onclick="hubungiWhatsAppUser(this.dataset.phone)">💬 Hubungi Pemilik</button>
+                    <button class="btn-sm primary" id="btn-fav-kost" onclick="tambahFavoritDariDetail()">❤️ Simpan Favorit</button>
+                </div>
             </div>
         </div>
     </div>
@@ -316,6 +319,7 @@
             statusEl.className   = 'pill ' + (STATUS_CLASS[d.status] || 'green');
 
             document.getElementById('kd-telepon').textContent = d.telepon || '-';
+            document.getElementById('kd-btn-wa').dataset.phone = d.telepon || '';
 
             const fasList = Array.isArray(d.fasList) ? d.fasList : [];
             document.getElementById('kd-fasilitas').innerHTML = fasList.length
@@ -374,6 +378,20 @@
                 }
             } catch (err) { showToast('Kesalahan server.', '❌'); }
             finally { btn.disabled = false; btn.textContent = '❤️ Simpan Favorit'; }
+        }
+
+        function hubungiWhatsAppUser(phone) {
+            if(!phone || phone === '-' || phone.trim() === '') {
+                alert('Nomor telepon pemilik tidak tersedia');
+                return;
+            }
+            let cp = phone.replace(/\D/g, '');
+            if(cp.startsWith('0')) {
+                cp = '62' + cp.substring(1);
+            } else if(!cp.startsWith('62')) {
+                cp = '62' + cp;
+            }
+            window.open('https://wa.me/' + cp, '_blank');
         }
     </script>
 @endpush
